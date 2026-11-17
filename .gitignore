@@ -1,0 +1,8 @@
+.DS_Store
+# Local design-tool state (contains absolute paths)
+03 Dashboard/.taste-skill/
+# Old per-iteration backups of main.swift; git history replaces them
+02 Build/src/main_v*.swift
+# Build output
+*.app/
+.build/

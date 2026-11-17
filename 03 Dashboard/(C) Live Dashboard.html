@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en" data-radius="sharp" data-type="software">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="page-type" content="software">
+<meta name="site-kind" content="software">
+<title>SpeakerSync Live</title>
+<meta name="description" content="Live view of every speaker SpeakerSync keeps in time: where each one lands, how it was calibrated, and what the system just did.">
+<meta name="theme-color" content="#0f0f0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Deal (tasteskill 2.5, kind: software / devtool), 2026-11-15: palette soot-pale-lime (near-black instrument ground,
+   one lime signal colour for "in time" and actions), type familjen (Familjen Grotesk + IBM Plex Mono), radius sharp.
+   Replaces graphite-safety-orange / Host Grotesk. The taste skill's finish gate is for marketing pages and stays
+   disarmed for this local tool (project CLAUDE.md). Speaker colours: Eris near-white, Brane coral, JBL sky. */
+:root {
+  --p-bg: #0f0f0f; --p-surface: #1a1a1a; --p-ink: #ffffff; --p-muted: #8f8f8f;
+  --p-accent: #dafa9c; --p-accent-ink: #0f0f0f; --p-action: #dafa9c; --p-action-ink: #0f0f0f;
+  --font-display: "Familjen Grotesk", system-ui, sans-serif;
+  --font-text: "Familjen Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400; --display-tracking: -0.03em; --display-tracking-xl: -0.04em;
+  --line: #262626; --line-2: #333333; --dim: #5c5c5c;
+  --ok: var(--p-accent); --warn: #f2c14e; --bad: #ff6b5b; --r: 2px;
+}
+* { box-sizing: border-box }
+html { background: var(--p-bg) }
+body { margin: 0; background: var(--p-bg); color: var(--p-ink); font: 400 15px/1.5 var(--font-text); -webkit-font-smoothing: antialiased }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 max(24px, env(safe-area-inset-left, 0px)) 64px }
+@media (max-width: 560px) { .wrap { padding-left: 16px; padding-right: 16px } }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums }
+h1, h2 { font-family: var(--font-display); font-weight: var(--display-weight); letter-spacing: var(--display-tracking); margin: 0 }
+h2 { font-size: 15px; letter-spacing: 0; font-weight: 500; color: var(--p-ink) }
+.sub { color: var(--p-muted); font-size: 13px }
+.panel { background: var(--p-surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px }
+.panel > header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px }
+
+/* top bar */
+.top { display: grid; grid-template-columns: 1fr auto; gap: 18px 24px; align-items: end; padding: 28px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 22px }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap }
+.brand h1 { font-size: clamp(30px, 4vw, 44px); letter-spacing: var(--display-tracking-xl); line-height: 1 }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); display: inline-block; transform: translateY(-4px) }
+.pulse.on { background: var(--ok); box-shadow: 0 0 0 0 rgba(218,250,156,.6); animation: ping .5s ease-out }
+@keyframes ping { to { box-shadow: 0 0 0 7px rgba(218,250,156,0) } }
+.state { font-family: var(--font-mono); font-size: 13px; padding: 4px 10px; border: 1px solid var(--line-2); border-radius: var(--r); color: var(--p-muted) }
+.state.ok { color: var(--p-accent-ink); background: var(--ok); border-color: var(--ok) }
+.state.busy { color: var(--p-bg); background: var(--warn); border-color: var(--warn) }
+.state.bad { color: var(--p-ink); background: #5a1f1a; border-color: var(--bad) }
+.facts { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 14px }
+.fact b { display: block; font: 500 22px/1.1 var(--font-mono); letter-spacing: -0.02em }
+.fact span { color: var(--p-muted); font-size: 12px }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end }
+button, select { font: 500 13px/1 var(--font-text); border-radius: var(--r); border: 1px solid var(--line-2); background: transparent; color: var(--p-ink); padding: 10px 14px; min-height: 40px; cursor: pointer; transition: transform .12s, background .12s, border-color .12s }
+button:hover { border-color: var(--p-muted); transform: translateY(-1px) }
+button:active { transform: translateY(0) scale(.98) }
+button.primary { background: var(--p-action); color: var(--p-action-ink); border-color: var(--p-action) }
+button.primary:hover { background: #e8ffbd }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--p-accent); outline-offset: 2px }
+.test { display: flex; gap: 6px; align-items: center; padding-left: 10px; border-left: 1px solid var(--line) }
+.test label { color: var(--p-muted); font-size: 12px; margin-right: 2px }
+
+/* stage */
+.stage { margin-bottom: 18px }
+.lane-wrap { position: relative }
+canvas { display: block; width: 100%; }
+
+/* speaker cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 18px }
+.card { position: relative; padding-top: 22px }
+.card::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: var(--c) }
+.card .name { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.card .name strong { font-weight: 500; font-size: 16px }
+.tag { font: 500 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .06em; padding: 4px 7px; border-radius: var(--r); border: 1px solid var(--line-2); color: var(--p-muted) }
+.tag.ref { color: var(--p-bg); background: var(--c); border-color: var(--c) }
+.big { font: 500 40px/1 var(--font-mono); letter-spacing: -0.03em; margin: 16px 0 4px }
+.big.ok { color: var(--ok) } .big.warn { color: var(--warn) } .big.bad { color: var(--bad) } .big.dim { color: var(--dim) }
+.rows { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin-top: 14px; font-size: 13px }
+.rows dt { color: var(--p-muted) } .rows dd { margin: 0; text-align: right; font-family: var(--font-mono) }
+.meter { height: 6px; background: var(--line); border-radius: 1px; overflow: hidden; margin-top: 6px }
+.meter i { display: block; height: 100%; background: var(--c) }
+
+/* two-up */
+.two { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; margin-bottom: 18px }
+@media (max-width: 960px) { .two { grid-template-columns: 1fr } .top { grid-template-columns: 1fr } .actions { justify-content: flex-start } }
+
+/* calibration pipeline */
+.pipe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px }
+.step { border: 1px solid var(--line-2); border-radius: var(--r); padding: 12px; min-height: 104px }
+.step h3 { margin: 0 0 6px; font: 500 13px/1.3 var(--font-text) }
+.step p { margin: 0; color: var(--p-muted); font-size: 12px; line-height: 1.45 }
+.step.now { border-color: var(--warn) } .step.now h3 { color: var(--warn) }
+.step.done h3 { color: var(--ok) }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px }
+.chip { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); outline: 1px solid transparent }
+.chip.done { background: var(--c) } .chip.now { background: var(--warn); outline-color: var(--warn); animation: blink 1s infinite }
+@keyframes blink { 50% { opacity: .35 } }
+@media (max-width: 640px) { .pipe { grid-template-columns: 1fr 1fr } }
+.how { margin-top: 14px; color: var(--p-muted); font-size: 12.5px; line-height: 1.6; border-top: 1px solid var(--line); padding-top: 12px }
+.how b { color: var(--p-ink); font-weight: 500 }
+
+/* events */
+.events { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto }
+.events li { display: grid; grid-template-columns: 64px 92px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; align-items: baseline }
+.events li:first-child { border-top: 0 }
+.events time { font: 400 12px var(--font-mono); color: var(--dim) }
+.kind { font: 500 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--p-muted) }
+.kind.recal { color: var(--warn) } .kind.fix { color: var(--ok) } .kind.id { color: #8ec9ff } .kind.test { color: #ff9e7a }
+
+.foot { display: flex; gap: 24px; flex-wrap: wrap; color: var(--p-muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 14px }
+.foot b { color: var(--p-ink); font-family: var(--font-mono); font-weight: 400 }
+.offline { display: none; margin: 0 0 18px; padding: 12px 16px; border: 1px solid var(--bad); color: var(--bad); border-radius: var(--r); font-size: 14px }
+.offline.show { display: block }
+@media (prefers-reduced-motion: reduce) { .pulse.on, .chip.now { animation: none } button { transition: none } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand"><h1>SpeakerSync</h1><span class="pulse" id="pulse" aria-hidden="true"></span><span class="state" id="state">connecting</span></div>
+      <div class="facts">
+        <div class="fact"><b id="fRef">–</b><span id="fRefHow">reference speaker</span></div>
+        <div class="fact"><b id="fDelay">–</b><span>total delay, Mac to sound</span></div>
+        <div class="fact"><b id="fCad">–</b><span>between readings</span></div>
+        <div class="fact"><b id="fIn">–</b><span>readings in time, last 60 s</span></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="relock" title="Runs the sweep: music mutes for about 20 s">Re-calibrate (sweep)</button>
+      <div class="test">
+        <label for="slipDev">Test slip</label>
+        <select id="slipDev" aria-label="Speaker to slip"></select>
+        <button data-ms="15">+15 ms</button><button data-ms="-15">−15 ms</button>
+      </div>
+    </div>
+  </header>
+
+  <p class="offline" id="offline">SpeakerSync isn't answering on this Mac. Open SpeakerSync.app, then this page reconnects by itself.</p>
+
+  <section class="panel stage">
+    <header><h2>Where each speaker lands right now</h2><span class="sub" id="laneSub">relative to the reference, in milliseconds</span></header>
+    <div class="lane-wrap"><canvas id="lane" height="150" data-h="150" style="height:150px" aria-label="Each speaker's timing against the reference"></canvas></div>
+  </section>
+
+  <section class="cards" id="cards" aria-label="Speakers"></section>
+
+  <div class="two">
+    <section class="panel">
+      <header><h2>Timing over the last 3 minutes</h2><span class="sub">solid = identified reading, faint = merged with the reference</span></header>
+      <canvas id="hist" height="250" data-h="250" style="height:250px" aria-label="Offset history per speaker"></canvas>
+    </section>
+    <section class="panel">
+      <header><h2>What the mic hears</h2><span class="sub" id="corrSub">correlation, ±300 ms</span></header>
+      <canvas id="corr" height="250" data-h="250" style="height:250px" aria-label="Correlation between the music and the mic"></canvas>
+    </section>
+  </div>
+
+  <div class="two">
+    <section class="panel">
+      <header><h2>Calibration</h2><span class="sub" id="calSub">–</span></header>
+      <div class="pipe" id="pipe"></div>
+      <div class="how">
+        <b>Sweep</b> times each speaker alone with a 0.4 s chirp (music muted ~10 s). <b>Loudness</b> plays ~2 s of music on each alone so the app knows whose spike is whose.
+        <b>Buffers</b> are rebuilt so every speaker lands with the reference. <b>Live</b> reads the mic every 0.25 s; a slipping follower is named by an inaudible 10 ms nudge and moved back.
+        The sweep runs when SpeakerSync starts (every Bluetooth stream restarts then), when the speakers change, or when you press Re-calibrate. While you listen, a dropped stream, a macOS delay change or a spike no follower owns starts a <b>quiet re-lock</b> instead: each speaker, the reference too, is slid 10 ms in turn to find it in the music. Nothing is muted.
+      </div>
+    </section>
+    <section class="panel">
+      <header><h2>What the system just did</h2><span class="sub">newest first</span></header>
+      <ul class="events" id="events"><li><time>–</time><span class="kind">wait</span><span class="sub">reading the log…</span></li></ul>
+    </section>
+  </div>
+
+  <footer class="foot" id="foot"></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const COLORS = [['Eris', '#ededed'], ['Brane', '#ff9e7a'], ['JBL Clip', '#8ec9ff']], EXTRA = ['#f2d16b', '#9fe0d0', '#c6e38b'];
+const colorCache = {};
+function colorOf(name, i) { if (!colorCache[name]) { const m = COLORS.find(([k]) => name.startsWith(k)); colorCache[name] = m ? m[1] : EXTRA[i % EXTRA.length] } return colorCache[name] }
+const short = n => n.replace(/-\d{6,}$/, '');
+const fmt = (v, d = 1) => v == null || !isFinite(v) ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+let last = null, lastReadings = 0;
+
+function sizeCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = +(c.dataset.h || (c.dataset.h = c.getAttribute('height')));
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); c.style.height = h + 'px' }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return [g, w, h];
+}
+function band(d) { return Math.max(4, ...d.devices.filter(o => o.role === 'follower').map(o => o.learn.deadbandMs || 6)) }
+function statusOf(o, b) {
+  if (o.role === 'reference') return 'ok';
+  if (o.relMs == null) return 'dim';
+  const a = Math.abs(o.relMs); return a <= b ? 'ok' : a <= 2 * b ? 'warn' : 'bad';
+}
+
+function drawLane(d) {
+  const [g, w, h] = sizeCanvas($('lane')), R = 60, b = band(d), padX = 24, y0 = 72;
+  const x = v => padX + (Math.max(-R, Math.min(R, v)) + R) / (2 * R) * (w - 2 * padX);
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = 'rgba(218,250,156,.08)'; g.fillRect(x(-b), 22, x(b) - x(-b), 92);
+  g.strokeStyle = '#262626'; g.lineWidth = 1; g.font = '11px "IBM Plex Mono", monospace'; g.fillStyle = '#5c5c5c'; g.textAlign = 'center';
+  for (let v = -R; v <= R; v += 10) { g.beginPath(); g.moveTo(x(v), 22); g.lineTo(x(v), 114); g.stroke(); g.fillText(v === 0 ? '0' : (v > 0 ? '+' : '') + v, x(v), 132) }
+  g.fillStyle = '#8f8f8f'; g.textAlign = 'left'; g.fillText('early', padX, 148); g.textAlign = 'right'; g.fillText('late', w - padX, 148);
+  g.textAlign = 'center'; g.fillStyle = 'rgba(218,250,156,.7)'; g.fillText(`in time ±${b.toFixed(0)} ms`, x(0), 16);
+  const devs = d.devices.map((o, i) => ({ o, i, v: o.role === 'reference' ? 0 : o.relMs }));
+  devs.sort((a, c) => (a.v ?? 0) - (c.v ?? 0)).forEach((e, k) => {
+    const col = colorOf(e.o.name, e.i), yy = y0 + (k - (devs.length - 1) / 2) * 26;
+    if (e.v == null) { g.fillStyle = '#5c5c5c'; g.font = '12px "Familjen Grotesk"'; g.textAlign = 'left'; g.fillText(`${short(e.o.name)}: measuring`, padX + 4, yy + 4); return }
+    const xx = x(e.v), off = Math.abs(e.v) > R;
+    g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x(0), yy); g.lineTo(xx, yy); g.stroke();
+    g.fillStyle = col; g.beginPath(); g.arc(xx, yy, e.o.role === 'reference' ? 7 : 6, 0, 7); g.fill();
+    if (e.o.role === 'reference') { g.strokeStyle = '#0f0f0f'; g.lineWidth = 2; g.beginPath(); g.arc(xx, yy, 3, 0, 7); g.stroke() }
+    g.font = '500 12px "Familjen Grotesk"'; g.textAlign = xx > w / 2 ? 'right' : 'left';
+    const lbl = `${short(e.o.name)} ${e.o.role === 'reference' ? 'REF' : fmt(e.v) + ' ms'}${off ? ' (off scale)' : ''}`;
+    g.fillText(lbl, xx + (xx > w / 2 ? -12 : 12), yy - 9);
+  });
+}
+
+function renderCards(d) {
+  const b = band(d), el = $('cards');
+  el.innerHTML = d.devices.map((o, i) => {
+    const c = colorOf(o.name, i), st = statusOf(o, b), ref = o.role === 'reference';
+    const big = ref ? 'REF' : o.relMs == null ? 'measuring' : `${fmt(o.relMs)} ms`;
+    const lvl = o.level >= 0 ? Math.round(o.level * 100) : null;
+    return `<article class="panel card" style="--c:${c}">
+      <div class="name"><strong>${short(o.name)}</strong><span class="tag ${ref ? 'ref' : ''}">${ref ? (d.referencePinned ? 'reference · pinned' : 'reference · auto') : 'follower'}</span></div>
+      <div class="big ${ref ? 'ok' : st}">${big}</div>
+      <div class="sub">${ref ? 'everything is timed against this speaker' : st === 'ok' ? 'in time with the reference' : st === 'dim' ? 'not identified in the latest reading' : st === 'warn' ? 'slipping, being corrected' : 'out of time, being corrected'}${o.muted ? ' · muted for calibration' : ''}</div>
+      <dl class="rows">
+        <dt>Own Bluetooth delay</dt><dd>${o.latencyMs == null ? '–' : o.latencyMs.toFixed(0) + ' ms'}</dd>
+        <dt>${ref ? 'Hold-back' : 'Buffer'}</dt><dd>${o.holdMs.toFixed(0)} ms</dd>
+        <dt>Level</dt><dd>${lvl == null ? '–' : lvl + '%'}<div class="meter"><i style="width:${lvl ?? 0}%"></i></div></dd>
+        <dt>Loudness fingerprint</dt><dd>${ref ? '1.00 (baseline)' : o.fingerprint.toFixed(2) + '×'}</dd>
+        ${ref ? '' : `<dt>Drift learned</dt><dd>${fmt(o.driftRateMsPerS, 2)} ms/s</dd>
+        <dt>Corrections</dt><dd>${o.corrections}</dd>
+        <dt>Tuning</dt><dd>${o.learn.window} readings · ${Math.round(o.learn.gain * 100)}% · ±${o.learn.deadbandMs.toFixed(1)} ms</dd>`}
+      </dl></article>`;
+  }).join('');
+}
+
+function drawHist(d) {
+  const [g, w, h] = sizeCanvas($('hist')), now = Date.now() / 1000, span = 180, R = 40, pl = 40, pr = 10, pt = 10, pb = 22;
+  const x = t => pl + (1 - (now - t) / span) * (w - pl - pr), y = v => pt + (1 - (Math.max(-R, Math.min(R, v)) + R) / (2 * R)) * (h - pt - pb);
+  g.clearRect(0, 0, w, h); const b = band(d);
+  g.fillStyle = 'rgba(218,250,156,.07)'; g.fillRect(pl, y(b), w - pl - pr, y(-b) - y(b));
+  g.font = '11px "IBM Plex Mono", monospace'; g.fillStyle = '#5c5c5c'; g.strokeStyle = '#262626'; g.textAlign = 'right';
+  for (const v of [-40, -20, 0, 20, 40]) { g.beginPath(); g.moveTo(pl, y(v)); g.lineTo(w - pr, y(v)); g.stroke(); g.fillText((v > 0 ? '+' : '') + v, pl - 6, y(v) + 4) }
+  g.textAlign = 'center'; for (const s of [180, 120, 60, 0]) g.fillText(s ? `−${s / 60} min` : 'now', x(now - s), h - 6);
+  for (const c of d.corrLog || []) if (now - c.t < span) { g.strokeStyle = 'rgba(242,193,78,.25)'; g.beginPath(); g.moveTo(x(c.t), pt); g.lineTo(x(c.t), h - pb); g.stroke() }
+  d.devices.forEach((o, i) => {
+    if (o.role === 'reference') return; const col = colorOf(o.name, i);
+    const rs = (d.readings || []).filter(r => r.dev === o.uid && now - r.t < span && !r.unknown);
+    g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); let started = false;
+    for (const r of rs) { const X = x(r.t), Y = y(r.err); if (!started) { g.moveTo(X, Y); started = true } else g.lineTo(X, Y) }
+    g.globalAlpha = .35; g.stroke(); g.globalAlpha = 1;
+    for (const r of rs) if (r.valid) { g.fillStyle = col; g.fillRect(x(r.t) - 1.5, y(r.err) - 1.5, 3, 3) }
+  });
+}
+
+function drawCorr(d) {
+  const [g, w, h] = sizeCanvas($('corr')), c = d.corr || [], pb = 22, b = band(d);
+  g.clearRect(0, 0, w, h); if (!c.length) return;
+  const lo = d.corrLoMs ?? -300, step = d.corrBinMs || 1, x = ms => (ms - lo) / (c.length * step) * w, y = v => (h - pb) - Math.min(1, v) * (h - pb - 8);
+  g.fillStyle = 'rgba(218,250,156,.07)'; g.fillRect(x(-b), 0, x(b) - x(-b), h - pb);
+  g.font = '11px "IBM Plex Mono", monospace'; g.fillStyle = '#5c5c5c'; g.textAlign = 'center';
+  for (const v of [-300, -150, 0, 150, 300]) g.fillText((v > 0 ? '+' : '') + v, Math.max(14, Math.min(w - 14, x(v))), h - 6);
+  g.beginPath(); g.moveTo(0, h - pb); c.forEach((v, i) => g.lineTo(i / c.length * w, y(v))); g.lineTo(w, h - pb); g.closePath();
+  g.fillStyle = 'rgba(255,255,255,.07)'; g.fill();
+  g.beginPath(); c.forEach((v, i) => i ? g.lineTo(i / c.length * w, y(v)) : g.moveTo(0, y(v))); g.strokeStyle = '#bdbdbd'; g.lineWidth = 1; g.stroke();
+  for (const s of d.spikes || []) { g.strokeStyle = Math.abs(s.relMs) <= b ? '#dafa9c' : '#f2c14e'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x(s.relMs), 8); g.lineTo(x(s.relMs), h - pb); g.stroke(); g.setLineDash([]) }
+  $('corrSub').textContent = `music vs mic · signal ${(d.snr || 0).toFixed(0)}× noise`;
+}
+
+function renderPipe(d) {
+  const ph = d.phase, n = d.devices.length, cur = d.devices.findIndex(o => !o.muted);
+  const solo = ph === 'solo', loud = ph === 'loud', live = ['track', 'probe', 'spot', 'scan'].includes(ph);
+  const chips = (active) => `<div class="chips">${d.devices.map((o, i) => `<span class="chip ${active === 'done' || (active === 'run' && i < cur) ? 'done' : active === 'run' && i === cur ? 'now' : ''}" style="--c:${colorOf(o.name, i)}" title="${short(o.name)}"></span>`).join('')}</div>`;
+  const step = (title, text, state, chipState) => `<div class="step ${state}"><h3>${title}</h3><p>${text}</p>${chipState ? chips(chipState) : ''}</div>`;
+  $('pipe').innerHTML =
+    step('1 · Sweep', solo ? `timing ${short(d.devices[cur]?.name || '')} alone` : 'each speaker alone, one chirp', solo ? 'now' : 'done', solo ? 'run' : 'done') +
+    step('2 · Loudness', loud ? `listening to ${short(d.devices[cur]?.name || '')} on music` : 'who is loud at the mic', loud ? 'now' : solo ? '' : 'done', loud ? 'run' : solo ? 'none' : 'done') +
+    step('3 · Buffers', 'everyone lands with the reference', live ? 'done' : '', null) +
+    step('4 · Live', ph === 'scan' ? 'quiet re-lock: sliding each speaker 10 ms to find it' : ph === 'probe' ? 'nudging a follower to name a spike' : ph === 'spot' ? 'checking levels' : live ? `reading every ${(d.debug?.paceS ?? 0.25).toFixed(2)} s` : 'waiting', live ? (ph === 'track' ? 'done' : 'now') : '', ph === 'scan' ? 'run' : null);
+  const since = d.lockedAt ? Math.round(Date.now() / 1000 - d.lockedAt) : null;
+  $('calSub').textContent = since == null ? '–' : `last calibration ${since < 90 ? since + ' s' : Math.round(since / 60) + ' min'} ago`;
+}
+
+const KINDS = [
+  [/quiet re-lock: (.*?); finding each speaker/, 'id', 'Quiet re-lock', m => `${m[1]} (no sweep)`],
+  [/quiet re-lock: (.*?) is at ([+−-][\d.]+) ms \(own delay (\d+) ms\)/, 'id', 'Found', m => `${short(m[1])} at ${m[2]} ms, own delay ${m[3]} ms`],
+  [/quiet re-lock: (everyone in time.*|corrected.*)/, 'fix', 'Re-locked', m => m[1]],
+  [/quiet re-lock: (pass \d+: .*|after 4 passes.*)/, 'recal', 'Quiet re-lock', m => m[1].replace(/-\d{6,}/g, '')],
+  [/quiet start: (.*)/, 'fix', 'Quiet start', m => m[1].replace(/-\d{6,}/g, '')],
+  [/re-calibrating: (.*?)( \(a Bluetooth.*)?$/, 'recal', 'Re-calibrate', m => m[1]],
+  [/calibrating: a short sweep/, 'recal', 'Calibrate', () => 'sweeping each speaker'],
+  [/lock: reference hold-back (\d+) ms; total delay from the Mac ≈ (\d+) ms/, 'fix', 'Locked', m => `total delay ${m[2]} ms, reference holds back ${m[1]} ms`],
+  [/lock: loudness fingerprint \((.*?)\) (.*)/, 'fix', 'Loudness', m => `${m[2].replace(/-\d{6,}/g, '')} (${m[1]})`],
+  [/lock: (nothing moved.*|confirmed a real jump.*)/, 'id', 'Checked', m => m[1]],
+  [/probe: the (.*?) spike is (.*?) \(moved/, 'id', 'Identified', m => `${m[1]} spike is ${short(m[2])} (nudge)`],
+  [/drift: (.*?) (late|early) by ([\d.]+) ms -> (\w+)/, 'fix', 'Corrected', m => `${short(m[1])} was ${m[2]} by ${m[3]} ms, ${m[4]}`],
+  [/levels: (.*?) ·/, '', 'Level', m => m[1].replace(/-\d{6,}/g, '')],
+  [/test: injected a (.*)/, 'test', 'Test', m => `${m[1].replace(/-\d{6,}/g, '')}`],
+  [/learned a room reflection at (.*)/, 'id', 'Reflection', m => `room reflection at ${m[1]}`],
+  [/hold-back increased by (\d+) ms so (.*?) can/, 'fix', 'Hold-back', m => `+${m[1]} ms so ${short(m[2])} can play earlier`],
+  [/capture not started yet/, 'recal', 'Waiting', () => 'macOS hasn\'t started capture; play something'],
+  [/engine start: (.*?) · reference (.*?) ·/, '', 'Start', m => `${m[1].replace(/-\d{6,}/g, '')}, reference ${short(m[2])}`],
+];
+function renderEvents(text) {
+  const out = [];
+  for (const line of text.split('\n').reverse()) {
+    const mm = line.match(/^\d{4}-\d\d-\d\d (\d\d:\d\d:\d\d) \+0000 (.*)$/); if (!mm) continue;
+    for (const [re, cls, label, f] of KINDS) { const m = mm[2].match(re); if (m) { const t = new Date(`${line.slice(0, 10)}T${mm[1]}Z`); out.push(`<li><time>${t.toLocaleTimeString([], { hour12: false })}</time><span class="kind ${cls}">${label}</span><span>${f(m)}</span></li>`); break } }
+    if (out.length >= 14) break;
+  }
+  if (out.length) $('events').innerHTML = out.join('');
+}
+
+function render(d) {
+  last = d;
+  const st = d.state || '', s = $('state'); s.textContent = st || d.phase;
+  s.className = 'state ' + (/in time/.test(st) ? 'ok' : /calibrat|checking|identifying|correcting|adjusting/.test(st) ? 'busy' : /stall|waiting for macOS|failed/.test(st) ? 'bad' : '');
+  if ((d.debug?.readings || 0) !== lastReadings) { lastReadings = d.debug?.readings || 0; const p = $('pulse'); p.classList.remove('on'); void p.offsetWidth; p.classList.add('on') }
+  const ref = d.devices.find(o => o.role === 'reference');
+  $('fRef').textContent = ref ? short(ref.name) : '–'; $('fRefHow').textContent = d.referencePinned ? 'reference speaker, pinned' : 'reference speaker, automatic';
+  $('fDelay').textContent = d.totalDelayMs == null ? '–' : `${d.totalDelayMs.toFixed(0)} ms`;
+  $('fCad').textContent = `${(d.debug?.paceS ?? 0.25).toFixed(2)} s`;
+  const now = Date.now() / 1000, recent = (d.readings || []).filter(r => now - r.t < 60), known = recent.filter(r => !r.unknown);
+  $('fIn').textContent = known.length ? `${Math.round(100 * known.filter(r => Math.abs(r.err) <= band(d)).length / known.length)}%` : '–';
+  const sel = $('slipDev');
+  if (sel.options.length !== d.devices.length) sel.innerHTML = d.devices.map((o, i) => `<option value="${i}">${short(o.name)}${o.role === 'reference' ? ' (ref)' : ''}</option>`).join('');
+  drawLane(d); renderCards(d); drawHist(d); drawCorr(d); renderPipe(d);
+  const dbg = d.debug || {};
+  $('foot').innerHTML = `<span>readings <b>${dbg.readings ?? '–'}</b></span><span>unidentified <b>${dbg.readings ? Math.round(100 * (dbg.unknownReads || 0) / dbg.readings) : 0}%</b></span><span>nudges <b>${dbg.probes ?? 0}</b></span><span>echoes ignored <b>${d.echoes ?? 0}</b></span><span>music level <b>${((d.srcRms || 0) * 100).toFixed(1)}</b></span><span>served by SpeakerSync on this Mac only (localhost)</span>`;
+}
+
+async function poll() {
+  try { const d = await (await fetch('/status.json', { cache: 'no-store' })).json(); $('offline').classList.remove('show'); if (d.devices && d.devices.length) render(d); else $('state').textContent = d.state || 'idle' }
+  catch (e) { $('offline').classList.add('show'); $('state').textContent = 'offline'; $('state').className = 'state bad' }
+}
+async function pollLog() { try { renderEvents(await (await fetch('/log', { cache: 'no-store' })).text()) } catch (e) {} }
+$('relock').onclick = async () => { try { await fetch('/relock', { cache: 'no-store' }) } catch (e) {} };
+document.querySelectorAll('.test button').forEach(b => b.onclick = async () => { try { await fetch(`/slip?i=${$('slipDev').value}&ms=${b.dataset.ms}`, { cache: 'no-store' }) } catch (e) {} });
+window.addEventListener('resize', () => last && render(last));
+poll(); pollLog(); setInterval(poll, 250); setInterval(pollLog, 2000);
+</script>
+</body>
+</html>

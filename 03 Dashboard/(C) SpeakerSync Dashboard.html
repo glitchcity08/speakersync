@@ -1,0 +1,466 @@
+<title>SpeakerSync Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="page-type" content="software">
+<meta name="site-kind" content="software">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..500&display=swap" rel="stylesheet">
+<style>
+/* Deal (tasteskill 2.5, kind: software / devtool): palette graphite-safety-orange — rack-gear graphite with one orange signal
+   colour, the way studio hardware marks the light that matters. Type: host (Host Grotesk + JetBrains Mono). Radius: sharp.
+   Layout: a report — summary strip first, then evidence panels in reading order. Single dark look by design. */
+:root {
+  color-scheme: dark;
+  --p-bg: #18191b; --p-surface: #222427; --p-ink: #eff0f1; --p-muted: #9c9ea3;
+  --p-accent: #ff4a1f; --p-accent-ink: #18191b; --p-action: #ff4a1f; --p-action-ink: #18191b;
+  --font-display: "Host Grotesk", system-ui, sans-serif;
+  --font-text: "Host Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500; --display-tracking: -0.035em; --display-tracking-xl: -0.04em;
+  --line: #2e3034; --line-2: #3a3c41; --dim: #6b6d72;
+  --eris: #8fb3d9; --brane: #ff4a1f; --ok: #4cc38a; --hold: #e8b04b; --err: #ff6b6b;
+  --r: 2px;
+}
+* { box-sizing: border-box }
+body { background: var(--p-bg); color: var(--p-ink); font: 400 15px/1.55 var(--font-text); -webkit-font-smoothing: antialiased }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 0 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--font-display); font-weight: var(--display-weight); margin: 0; text-wrap: balance }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums }
+.tag { font: 500 .7rem var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--p-muted) }
+
+header.top { border-bottom: 1px solid var(--line); padding-block: 40px 28px }
+header.top .eyebrow { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.chip { display: inline-flex; align-items: center; gap: 8px; font: 500 .78rem var(--font-mono); padding: 5px 10px; border: 1px solid var(--line-2); border-radius: var(--r) }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok) }
+header.top h1 { font-size: clamp(2rem, 4.6vw, 3.4rem); letter-spacing: var(--display-tracking-xl); line-height: 1.05; margin-top: 18px; max-width: 18ch }
+header.top p { color: var(--p-muted); max-width: 64ch; margin: 14px 0 0; font-size: 1.02rem }
+
+.readouts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r); margin-top: 28px }
+.ro { padding: 16px 18px; border-left: 1px solid var(--line); min-width: 0 }
+.ro:first-child { border-left: 0 }
+.ro .k { font: 500 .7rem var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--p-muted) }
+.ro .v { font: 500 1.5rem/1.25 var(--font-mono); margin-top: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ro .n { font-size: .8rem; color: var(--p-muted) }
+@media (max-width: 1000px) { .readouts { grid-template-columns: repeat(3, minmax(0, 1fr)) } .ro:nth-child(4) { border-left: 0 } .ro:nth-child(n+4) { border-top: 1px solid var(--line) } }
+@media (max-width: 560px) { .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)) } .ro { border-left: 0 } .ro:nth-child(even) { border-left: 1px solid var(--line) } .ro:nth-child(n+3) { border-top: 1px solid var(--line) } }
+
+main { display: grid; gap: 16px; margin-top: 28px }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+@media (max-width: 900px) { .row { grid-template-columns: 1fr } }
+.panel { border: 1px solid var(--line); border-radius: var(--r); background: var(--p-surface); padding: 20px; min-width: 0 }
+.ph { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px }
+.ph h2 { font-size: 1.15rem; letter-spacing: -0.015em }
+.lede { color: var(--p-muted); font-size: .9rem; margin: 0 0 16px; max-width: 72ch }
+.chartbox { position: relative; height: 290px; width: 100% }
+.chartbox.tall { height: 330px }
+.key { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: .8rem; color: var(--p-muted) }
+.key i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 1px }
+
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: var(--r); margin-bottom: 14px; flex-wrap: wrap }
+.seg button { font: 500 .82rem var(--font-text); color: var(--p-muted); background: transparent; border: 0; border-left: 1px solid var(--line-2); min-height: 36px; padding: 0 14px; cursor: pointer; transition: color .12s, background .12s }
+.seg button:first-child { border-left: 0 }
+.seg button:hover { color: var(--p-ink) }
+.seg button[aria-pressed=true] { background: var(--p-ink); color: var(--p-bg) }
+.btn { font: 500 .88rem var(--font-text); min-height: 40px; padding: 0 16px; border-radius: var(--r); border: 1px solid var(--p-action); background: var(--p-action); color: var(--p-action-ink); cursor: pointer; transition: transform .12s ease, background .12s ease }
+.btn:hover { transform: translateY(-1px); background: #ff6440 }
+.btn:active { transform: translateY(1px) }
+.btn.ghost { background: transparent; color: var(--p-ink); border-color: var(--line-2) }
+.btn.ghost:hover { background: #ffffff0a }
+.btn[aria-pressed=true] { background: var(--p-ink); color: var(--p-bg); border-color: var(--p-ink) }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--p-ink); outline-offset: 2px }
+
+.sim-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 24px; margin-bottom: 16px }
+.ctl label { display: flex; justify-content: space-between; gap: 8px; font-size: .84rem; color: var(--p-muted); margin-bottom: 6px }
+.ctl label b { font: 500 .84rem var(--font-mono); color: var(--p-ink) }
+input[type=range] { width: 100%; accent-color: var(--p-accent) }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px }
+canvas.sim { width: 100%; display: block; background: var(--p-bg); border: 1px solid var(--line); border-radius: var(--r) }
+.sim-out { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--r); margin-top: 14px }
+.sim-out .ro .v { font-size: 1.15rem }
+@media (max-width: 760px) { .sim-out { grid-template-columns: repeat(2, minmax(0, 1fr)) } .sim-out .ro { border-left: 0; border-top: 1px solid var(--line) } .sim-out .ro:nth-child(even) { border-left: 1px solid var(--line) } .sim-out .ro:nth-child(-n+2) { border-top: 0 } }
+.window { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 8px; max-width: 520px }
+.cell { font: 500 .86rem var(--font-mono); text-align: center; padding: 9px 0; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--p-bg); font-variant-numeric: tabular-nums }
+.cell.med { border-color: var(--p-accent); color: var(--p-accent) }
+.cell.empty { color: var(--dim); border-style: dashed }
+.verdict { margin-top: 10px; font-size: .9rem; padding: 11px 14px; border-left: 2px solid var(--line-2); background: var(--p-bg) }
+.verdict.ok { border-left-color: var(--ok) } .verdict.act { border-left-color: var(--p-accent) }
+
+.math { font: 400 .84rem/1.85 var(--font-mono); background: var(--p-bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; overflow-x: auto; white-space: pre; color: var(--p-ink) }
+.math .c { color: var(--dim) } .math .k { color: var(--eris) } .math .v { color: var(--p-accent) }
+.conv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px }
+.conv label { display: block; font-size: .84rem; color: var(--p-muted); margin-bottom: 6px }
+.conv input { width: 100%; min-height: 44px; padding: 0 12px; font: 500 1rem var(--font-mono); color: var(--p-ink); background: var(--p-bg); border: 1px solid var(--line-2); border-radius: var(--r) }
+.tablewrap { overflow-x: auto }
+table { width: 100%; border-collapse: collapse; font-size: .86rem }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; vertical-align: top }
+th { font: 500 .7rem var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--p-muted) }
+td.mono { font-family: var(--font-mono); white-space: nowrap }
+.diagram { overflow-x: auto }
+.diagram svg { min-width: 760px; width: 100%; height: auto; display: block }
+ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start }
+ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 .8rem var(--font-mono); color: var(--p-muted); padding-top: 2px }
+ol.steps b { font-weight: 500 }
+ol.steps p { margin: 2px 0 0; color: var(--p-muted); font-size: .88rem }
+.res { font: 500 .74rem var(--font-mono); padding: 3px 8px; border: 1px solid var(--line-2); border-radius: var(--r); white-space: nowrap }
+.res.ok { color: var(--ok); border-color: #4cc38a55 } .res.no { color: var(--err); border-color: #ff6b6b55 } .res.mid { color: var(--hold); border-color: #e8b04b55 }
+footer { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--p-muted); font-size: .82rem; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+@media (prefers-reduced-motion: reduce) { .btn, .seg button { transition: none } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow"><span class="chip"><i></i>Locked on Bluetooth</span><span class="tag" id="snap"></span></div>
+  <h1>Keeping two Bluetooth speakers in time</h1>
+  <p>SpeakerSync plays the Mac's audio on the Eris 4.5BT and the Brane, holds the faster one back, and listens through the MacBook mic to correct drift. This report covers one evening of measurements, taken from its own log.</p>
+  <div class="readouts" id="kpis"></div>
+</header>
+
+<main>
+  <div class="row">
+    <section class="panel" aria-labelledby="h-rep">
+      <div class="ph"><h2 id="h-rep">Reported delay vs measured</h2><span class="tag">milliseconds</span></div>
+      <p class="lede">The Eris tells macOS its Bluetooth delay is 94 ms. The mic shows it lags about as much as the Brane, which is why the first fixed delay of 273 ms made things worse.</p>
+      <div class="chartbox"><canvas id="cReported"></canvas></div>
+    </section>
+    <section class="panel" aria-labelledby="h-beep">
+      <div class="ph"><h2 id="h-beep">Beep calibration runs</h2><span class="tag">7 runs</span></div>
+      <p class="lede">A 1.5 kHz beep on the Eris and a 3 kHz beep on the Brane, half a second apart, timed by the mic. The Eris lands within ±5 ms every run; the Brane spreads out.</p>
+      <div class="chartbox"><canvas id="cBeeps"></canvas></div>
+      <div class="key"><span><i style="background:var(--eris)"></i>Eris beep</span><span><i style="background:var(--brane)"></i>Brane beep</span></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-drift">
+    <div class="ph"><h2 id="h-drift">Drift corrections</h2><span class="tag" id="driftCount"></span></div>
+    <p class="lede">Each dot is a correction. Above zero the Brane was late, below it was early. Diamonds are lock-ins at startup, where the Brane's delay resets. After the median-of-5 filter went in, short jumps stopped triggering corrections.</p>
+    <div class="seg" role="group" aria-label="Filter corrections">
+      <button id="fAll" aria-pressed="true" type="button">All</button>
+      <button id="fPre" aria-pressed="false" type="button">Before median filter</button>
+      <button id="fMed" aria-pressed="false" type="button">With median filter</button>
+    </div>
+    <div class="chartbox tall"><canvas id="cDrift"></canvas></div>
+    <div class="key"><span><i style="background:var(--brane)"></i>Brane late</span><span><i style="background:var(--eris)"></i>Brane early</span><span><i style="background:var(--p-ink)"></i>Lock-in</span><span><i style="background:var(--ok)"></i>Median filter switched on</span></div>
+  </section>
+
+  <div class="row">
+    <section class="panel" aria-labelledby="h-burst">
+      <div class="ph"><h2 id="h-burst">Bluetooth buffer swings</h2><span class="tag">3 s windows</span></div>
+      <p class="lede">The Brane takes audio in bursts. Each bar is how far the Mac-side buffer swung in three seconds: about ±45 ms, while the speaker itself plays at a steady rate. Steering on this number made the early versions jumpy.</p>
+      <div class="chartbox"><canvas id="cBurst"></canvas></div>
+    </section>
+    <section class="panel" aria-labelledby="h-v1">
+      <div class="ph"><h2 id="h-v1">Version 1 resyncs</h2><span class="tag">fixed delay</span></div>
+      <p class="lede">Version 1 held the Eris back by a fixed amount and kept the Brane's buffer level steady. Those bursts made it snap the Brane back 288 times.</p>
+      <div class="chartbox"><canvas id="cV1"></canvas></div>
+      <div class="key"><span><i style="background:var(--brane)"></i>Resyncs, running total</span><span><i style="background:var(--eris)"></i>Eris delay setting</span></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-sim">
+    <div class="ph"><h2 id="h-sim">Sync simulator</h2><span class="tag">same algorithm, 8 kHz</span></div>
+    <p class="lede">A simulated room running the algorithm SpeakerSync uses. The mic hears both speakers; cross-correlating its recording with the sent audio gives one spike per speaker, and the distance between them is the error. Set the room, then run it.</p>
+    <div class="sim-controls">
+      <div class="ctl"><label for="sOff">Brane offset vs Eris <b id="vOff"></b></label><input type="range" id="sOff" min="-120" max="120" value="40" step="1"></div>
+      <div class="ctl"><label for="sJit">Jitter per reading <b id="vJit"></b></label><input type="range" id="sJit" min="0" max="20" value="4" step="1"></div>
+      <div class="ctl"><label for="sSpike">Chance of a 30–90 ms jump <b id="vSpike"></b></label><input type="range" id="sSpike" min="0" max="50" value="15" step="1"></div>
+      <div class="ctl"><label for="sNoise">Room noise <b id="vNoise"></b></label><input type="range" id="sNoise" min="0" max="100" value="25" step="1"></div>
+      <div class="ctl"><label for="sRefl">Wall reflection <b id="vRefl"></b></label><input type="range" id="sRefl" min="0" max="80" value="30" step="1"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="bMeasure" type="button">Take a reading</button>
+      <button class="btn ghost" id="bAuto" aria-pressed="false" type="button">Run continuously</button>
+      <button class="btn ghost" id="bReset" type="button">Reset correction</button>
+    </div>
+    <canvas class="sim" id="simCorr" width="1100" height="260" aria-label="Simulated cross-correlation"></canvas>
+    <div class="sim-out">
+      <div class="ro"><div class="k">Eris spike</div><div class="v" id="rPe">–</div></div>
+      <div class="ro"><div class="k">Brane spike</div><div class="v" id="rPb">–</div></div>
+      <div class="ro"><div class="k">Measured error</div><div class="v" id="rErr">–</div></div>
+      <div class="ro"><div class="k">Correction applied</div><div class="v" id="rCorr">0.0 ms</div></div>
+      <div class="ro"><div class="k">True error left</div><div class="v" id="rTrue">–</div></div>
+    </div>
+    <div class="window" id="rHist"></div>
+    <div class="verdict" id="rDecision">Take readings to fill the window.</div>
+    <canvas class="sim" id="simTrack" width="1100" height="200" style="margin-top:14px" aria-label="Simulated error over time"></canvas>
+    <div class="key"><span><i style="background:var(--p-muted)"></i>True error after correction</span><span><i style="background:var(--brane)"></i>Mic reading</span><span><i style="background:var(--p-ink)"></i>Reading that triggered a correction</span><span><i style="background:#4cc38a40"></i>±6 ms</span></div>
+  </section>
+
+  <div class="row">
+    <section class="panel" aria-labelledby="h-math">
+      <div class="ph"><h2 id="h-math">The calculation</h2><span class="tag">every ~0.75 s</span></div>
+      <p class="lede">What SpeakerSync computes from its three inputs: the system audio, the mic and each speaker's buffer.</p>
+<div class="math"><span class="c">// inputs</span>
+<span class="k">s[n]</span>  system audio from the tap, 44,100 Hz
+<span class="k">m[n]</span>  MacBook mic, 48 kHz mapped onto s's timeline
+
+<span class="c">// what each speaker plays</span>
+Eris   s[n − <span class="v">erisD</span>]         fixed hold-back
+Brane  s[n − lag] + shifts    free-running
+
+<span class="c">// GCC-PHAT over a 1.5 s window</span>
+<span class="k">C(f)</span> = conj(M)·S / |conj(M)·S|^0.75
+<span class="k">c(L)</span> = |IFFT(C)|, L in 0–1.1 s, 150 Hz–7 kHz
+averaged across readings to beat room noise
+
+<span class="c">// find the speakers</span>
+<span class="k">Pₑ</span>  = peak within ±12 ms of the last Eris
+<span class="k">P_b</span> = peak within ±300 ms, more than 2 ms away
+echo if 3–12 ms behind a peak twice as strong
+
+<span class="c">// decide</span>
+<span class="k">err</span>   = P_b − Pₑ       &gt; 0: Brane late
+<span class="k">med</span>   = median of the last 5 clear readings
+|med| &gt; <span class="v">6 ms</span>   slide the Brane 0.6 · med
+|med| &gt; <span class="v">50 ms</span>  jump straight there
+<span class="k">drift</span> += 0.3 · err / Δt   capped at ±1.2 ms/s</div>
+    </section>
+    <section class="panel" aria-labelledby="h-conv">
+      <div class="ph"><h2 id="h-conv">Frames and milliseconds</h2><span class="tag">44.1 kHz</span></div>
+      <p class="lede">The audio code counts sample frames. Type either value to convert.</p>
+      <div class="conv">
+        <div><label for="inMs">Milliseconds</label><input id="inMs" type="number" value="300" step="0.1" inputmode="decimal"></div>
+        <div><label for="inFr">Frames</label><input id="inFr" type="number" value="13230" step="1" inputmode="numeric"></div>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Setting</th><th>Frames</th><th>ms</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Buffer</td><td class="mono">512</td><td class="mono">11.6</td><td>One Core Audio callback</td></tr>
+          <tr><td>In-time band</td><td class="mono">265</td><td class="mono">6.0</td><td>Below this, two speakers sound like one</td></tr>
+          <tr><td>Jump threshold</td><td class="mono">2,205</td><td class="mono">50</td><td>Larger shifts jump instead of sliding</td></tr>
+          <tr><td>Brane minimum lag</td><td class="mono">3,072</td><td class="mono">69.7</td><td>Headroom for Bluetooth bursts</td></tr>
+          <tr><td>Correlation window</td><td class="mono">65,536</td><td class="mono">1,486</td><td>One reading</td></tr>
+          <tr><td>Largest gap searched</td><td class="mono">49,152</td><td class="mono">1,115</td><td>How far apart the speakers can drift</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-path">
+    <div class="ph"><h2 id="h-path">Signal path</h2><span class="tag">where each measurement is taken</span></div>
+    <div class="diagram">
+    <svg viewBox="0 0 980 300" role="img" aria-label="Signal path: Mac audio to tap to ring buffer to both speakers; the mic hears both and feeds the correlation, which shifts the Brane">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6b6d72"/></marker></defs>
+      <g font-family="Host Grotesk, system-ui, sans-serif" font-size="13" fill="#eff0f1">
+        <rect x="10" y="120" width="140" height="60" rx="2" fill="#18191b" stroke="#3a3c41"/><text x="80" y="146" text-anchor="middle" font-weight="500">Mac audio</text><text x="80" y="164" text-anchor="middle" font-size="11" fill="#9c9ea3">Spotify, YouTube</text>
+        <rect x="200" y="120" width="150" height="60" rx="2" fill="#18191b" stroke="#3a3c41"/><text x="275" y="146" text-anchor="middle" font-weight="500">Process tap</text><text x="275" y="164" text-anchor="middle" font-size="11" fill="#9c9ea3">mutes source, copies it</text>
+        <rect x="400" y="120" width="150" height="60" rx="2" fill="#18191b" stroke="#3a3c41"/><text x="475" y="146" text-anchor="middle" font-weight="500">Ring buffer</text><text x="475" y="164" text-anchor="middle" font-size="11" fill="#9c9ea3">about 12 s of audio</text>
+        <rect x="610" y="30" width="170" height="60" rx="2" fill="#18191b" stroke="#8fb3d9"/><text x="695" y="56" text-anchor="middle" font-weight="500" fill="#8fb3d9">Eris</text><text x="695" y="74" text-anchor="middle" font-size="11" fill="#9c9ea3">read at w − erisD</text>
+        <rect x="610" y="210" width="170" height="60" rx="2" fill="#18191b" stroke="#ff4a1f"/><text x="695" y="236" text-anchor="middle" font-weight="500" fill="#ff4a1f">Brane</text><text x="695" y="254" text-anchor="middle" font-size="11" fill="#9c9ea3">free-running + shifts</text>
+        <rect x="830" y="120" width="140" height="60" rx="2" fill="#18191b" stroke="#3a3c41"/><text x="900" y="146" text-anchor="middle" font-weight="500">MacBook mic</text><text x="900" y="164" text-anchor="middle" font-size="11" fill="#9c9ea3">hears both</text>
+        <rect x="400" y="230" width="170" height="56" rx="2" fill="#2a2b2e" stroke="#eff0f1"/><text x="485" y="254" text-anchor="middle" font-weight="500">GCC-PHAT</text><text x="485" y="272" text-anchor="middle" font-size="11" fill="#9c9ea3">median of 5, then shift</text>
+      </g>
+      <g stroke="#6b6d72" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <path d="M150 150 H196"/><path d="M350 150 H396"/>
+        <path d="M550 140 C580 120, 585 70, 606 62"/><path d="M550 160 C580 180, 585 230, 606 238"/>
+        <path d="M780 62 C810 70, 830 110, 862 118" stroke-dasharray="4 4"/><path d="M780 238 C810 230, 830 190, 862 182" stroke-dasharray="4 4"/>
+        <path d="M880 182 C860 260, 640 290, 574 262"/>
+        <path d="M475 182 L480 226"/>
+        <path d="M570 248 C590 248, 600 245, 606 242"/>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="10.5" fill="#9c9ea3"><text x="786" y="96">sound in the room</text><text x="660" y="296">mic recording</text><text x="490" y="208">sent audio s[n]</text></g>
+    </svg>
+    </div>
+  </section>
+
+  <div class="row">
+    <section class="panel" aria-labelledby="h-hist">
+      <div class="ph"><h2 id="h-hist">Approaches tried</h2><span class="tag">in order</span></div>
+      <ol class="steps" id="history"></ol>
+    </section>
+    <section class="panel" aria-labelledby="h-locks">
+      <div class="ph"><h2 id="h-locks">Lock-ins</h2><span class="tag" id="lockCount"></span></div>
+      <p class="lede">At each start SpeakerSync silences the Brane for about two seconds to find the Eris, then measures the Brane. The spread shows its delay changes after every restart.</p>
+      <div class="tablewrap"><table id="locks"><thead><tr><th>Time</th><th>Brane vs Eris</th><th>Hold-back after</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </div>
+</main>
+
+<footer><span>SpeakerSync v2 · data from ~/.local/speakersync/log.txt</span><span>Live view: http://localhost:8765 on the Mac running SpeakerSync</span></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = {"v1status": [[1794552494.0, 0.0, 0, 0, 273], [1794552499.0, 0.297, 0, 0, 273], [1794552504.0, 0.297, 0, 0, 273], [1794552509.0, 0.0, 0, 0, 273], [1794552514.0, 0.0, 0, 0, 273], [1794552519.0, 0.0, 0, 0, 273], [1794552524.0, 0.0, 0, 0, 273], [1794552529.0, 0.0, 0, 0, 273], [1794552534.0, 0.0, 0, 0, 273], [1794552539.0, 0.0, 0, 0, 273], [1794552544.0, 0.0, 0, 0, 273], [1794552549.0, 0.0, 0, 0, 273], [1794552554.0, 0.0, 0, 0, 273], [1794552559.0, 0.0, 0, 0, 273], [1794552564.0, 0.0, 0, 0, 273], [1794552569.0, 0.0, 0, 0, 273], [1794552574.0, 0.0, 0, 0, 273], [1794552579.0, 0.0, 0, 0, 273], [1794552584.0, 0.0, 0, 0, 273], [1794552589.0, 0.0, 0, 0, 273], [1794552594.0, 0.0, 0, 0, 273], [1794552599.0, 0.0, 0, 0, 273], [1794552604.0, 0.0, 0, 0, 273], [1794552609.0, 0.0, 0, 0, 273], [1794552614.0, 0.0, 0, 0, 273], [1794552619.0, 0.0, 0, 0, 273], [1794552624.0, 0.0, 0, 0, 273], [1794552629.0, 0.0, 0, 0, 273], [1794552634.0, 0.0, 0, 0, 273], [1794552639.0, 0.0, 0, 0, 273], [1794552644.0, 0.0, 0, 0, 273], [1794552649.0, 0.0, 0, 0, 273], [1794552654.0, 0.0, 0, 0, 300], [1794552659.0, 0.0, 0, 0, 300], [1794552664.0, 0.0, 0, 0, 300], [1794552669.0, 0.0, 0, 0, 300], [1794552674.0, 0.0, 0, 0, 300], [1794552679.0, 0.467, 0, 0, 300], [1794552684.0, 0.471, 0, 0, 273], [1794552689.0, 0.455, 0, 0, 273], [1794552694.0, 0.468, 0, 0, 273], [1794552699.0, 0.469, 0, 0, 273], [1794552704.0, 0.441, 0, 0, 273], [1794552709.0, 0.474, 0, 0, 273], [1794552714.0, 0.728, 0, 0, 273], [1794552719.0, 0.475, 0, 0, 273], [1794552724.0, 0.475, 0, 0, 273], [1794552729.0, 0.473, 0, 0, 273], [1794552734.0, 0.474, 0, 0, 350], [1794552739.0, 0.474, 0, 0, 350], [1794552744.0, 0.474, 0, 0, 350], [1794552749.0, 0.475, 0, 0, 350], [1794552754.0, 0.473, 0, 0, 350], [1794552759.0, 0.474, 0, 0, 350], [1794552764.0, 0.472, 0, 0, 350], [1794552769.0, 0.473, 0, 0, 350], [1794552774.0, 0.475, 0, 0, 350], [1794552779.0, 0.474, 0, 0, 350], [1794552784.0, 0.473, 0, 0, 350], [1794552789.0, 0.473, 0, 0, 350], [1794552794.0, 0.474, 0, 0, 350], [1794552799.0, 0.473, 0, 0, 350], [1794552804.0, 0.473, 0, 0, 350], [1794552809.0, 0.475, 0, 0, 350], [1794552814.0, 0.474, 0, 0, 350], [1794552819.0, 0.474, 0, 0, 350], [1794552824.0, 0.473, 0, 0, 350], [1794552829.0, 0.473, 0, 0, 350], [1794552834.0, 0.375, 0, 0, 350], [1794552839.0, 0.384, 0, 0, 350], [1794552844.0, 0.385, 0, 0, 350], [1794552849.0, 0.387, 0, 0, 350], [1794552854.0, 0.385, 0, 0, 350], [1794552866.0, 0.385, -250, 1, 350], [1794552871.0, 0.385, 503, 2, 350], [1794552876.0, 0.389, 485, 4, 350], [1794552881.0, 0.387, -7, 7, 350], [1794552886.0, 0.386, 536, 10, 350], [1794552897.0, 0.379, 34, 2, 350], [1794552902.0, 0.377, 112, 4, 350], [1794552907.0, 0.382, -189, 5, 350], [1794552912.0, 0.39, 414, 9, 350], [1794552927.0, 0.174, -107, 1, 350], [1794552932.0, 0.184, 505, 2, 350], [1794552937.0, 0.169, 123, 5, 350], [1794552942.0, 0.35, 353, 6, 350], [1794552947.0, 0.333, 505, 8, 350], [1794552952.0, 0.369, 513, 10, 350], [1794552957.0, 0.29, 44, 11, 10], [1794552962.0, 0.37, -10, 15, 10], [1794552967.0, 0.369, -149, 18, 10], [1794552972.0, 0.373, -870, 19, 10], [1794552977.0, 0.381, 322, 20, 10], [1794552982.0, 0.38, -372, 21, 10], [1794552987.0, 0.387, -12, 23, 10], [1794552992.0, 0.388, -1208, 23, 10], [1794552997.0, 0.385, -80, 24, 102], [1794553002.0, 0.389, -420, 25, 102], [1794553007.0, 0.391, 2, 26, 102], [1794553012.0, 0.387, 19, 29, 102], [1794553017.0, 0.386, 112, 30, 102], [1794553022.0, 0.391, 394, 32, 102], [1794553035.0, 0.384, -546, 3, 95], [1794553040.0, 0.386, -398, 7, 95], [1794553045.0, 0.387, 360, 9, 95], [1794553050.0, 0.388, 10, 11, 95], [1794553055.0, 0.382, 278, 11, 95], [1794553060.0, 0.38, 873, 13, 129], [1794553065.0, 0.378, 0, 15, 100], [1794553070.0, 0.375, 8, 17, 100], [1794553075.0, 0.376, -230, 18, 100], [1794553080.0, 0.374, -69, 20, 100], [1794553085.0, 0.318, 11, 24, 100], [1794553090.0, 0.318, 205, 27, 100], [1794553095.0, 0.318, 760, 29, 100], [1794553100.0, 0.319, -10, 32, 100], [1794553105.0, 0.318, 549, 33, 100], [1794553110.0, 0.319, -65, 36, 100], [1794553115.0, 0.32, 222, 37, 100], [1794553120.0, 0.319, -154, 38, 100], [1794553125.0, 0.318, -117, 38, 100], [1794553130.0, 0.32, 159, 39, 100], [1794553135.0, 0.318, 162, 41, 100], [1794553140.0, 0.318, -198, 42, 100], [1794553145.0, 0.318, 162, 43, 100], [1794553150.0, 0.318, -545, 44, 100], [1794553155.0, 0.319, -10, 45, 100], [1794553160.0, 0.321, 15, 46, 100], [1794553165.0, 0.321, -44, 49, 100], [1794553170.0, 0.32, 264, 52, 100], [1794553175.0, 0.319, 73, 53, 100], [1794553180.0, 0.153, 11, 54, 100], [1794553185.0, 0.0, -177, 57, 100], [1794553190.0, 0.147, 5, 58, 100], [1794553195.0, 0.003, -73, 61, 100], [1794553200.0, 0.0, -76, 64, 100], [1794553205.0, 0.0, -147, 66, 100], [1794553210.0, 0.0, -10, 67, 100], [1794553215.0, 0.0, 490, 69, 100], [1794553220.0, 0.0, -26, 70, 100], [1794553225.0, 0.0, -658, 73, 100], [1794553230.0, 0.0, 132, 75, 100], [1794553235.0, 0.0, -68, 76, 100], [1794553240.0, 0.0, 916, 77, 100], [1794553245.0, 0.0, -11, 80, 100], [1794553250.0, 0.0, 915, 81, 100], [1794553255.0, 0.0, 462, 83, 100], [1794553260.0, 0.153, -274, 85, 100], [1794553265.0, 0.0, -22, 86, 100], [1794553270.0, 0.147, 50, 88, 100], [1794553275.0, 0.0, 82, 91, 100], [1794553280.0, 0.0, -51, 92, 100], [1794553285.0, 0.0, -191, 94, 100], [1794553290.0, 0.0, 3, 96, 100], [1794553295.0, 0.0, -129, 99, 100], [1794553300.0, 0.0, -290, 99, 100], [1794553305.0, 0.0, -11, 102, 100], [1794553310.0, 0.0, -4, 106, 100], [1794553315.0, 0.0, -122, 107, 100], [1794553320.0, 0.0, 95, 109, 100], [1794553325.0, 0.0, -343, 110, 100], [1794553330.0, 0.0, 440, 111, 100], [1794553335.0, 0.153, -68, 115, 100], [1794553340.0, 0.014, 370, 117, 100], [1794553345.0, 0.0, -150, 118, 100], [1794553350.0, 0.147, 617, 119, 100], [1794553355.0, 0.0, 380, 121, 100], [1794553360.0, 0.0, -70, 122, 100], [1794553365.0, 0.0, -485, 123, 100], [1794553370.0, 0.0, -10, 126, 100], [1794553375.0, 0.0, 291, 127, 100], [1794553380.0, 0.0, -67, 128, 100], [1794553385.0, 0.0, 963, 131, 100], [1794553390.0, 0.0, 821, 131, 100], [1794553395.0, 0.0, -69, 133, 100], [1794553400.0, 0.0, 201, 139, 100], [1794553405.0, 0.0, -11, 140, 100], [1794553410.0, 0.0, 141, 142, 100], [1794553415.0, 0.0, -478, 144, 100], [1794553420.0, 0.0, 82, 148, 100], [1794553425.0, 0.0, -51, 149, 100], [1794553430.0, 0.0, 147, 151, 100], [1794553435.0, 0.0, -13, 154, 100], [1794553440.0, 0.0, 297, 157, 100], [1794553445.0, 0.0, -387, 158, 100], [1794553450.0, 0.0, 114, 160, 100], [1794553455.0, 0.0, -17, 163, 100], [1794553460.0, 0.0, -555, 163, 100], [1794553465.0, 0.0, 238, 164, 100], [1794553470.0, 0.0, -9, 166, 100], [1794553475.0, 0.0, 252, 169, 100], [1794553480.0, 0.0, -231, 170, 100], [1794553485.0, 0.0, 503, 171, 100], [1794553490.0, 0.0, 24, 172, 100], [1794553495.0, 0.0, -94, 174, 100], [1794553500.0, 0.321, -43, 178, 100], [1794553505.0, 0.32, 38, 179, 100], [1794553510.0, 0.321, 482, 181, 100], [1794553515.0, 0.319, 335, 183, 100], [1794553520.0, 0.319, -79, 184, 100], [1794553525.0, 0.32, 94, 188, 100], [1794553530.0, 0.322, -55, 190, 100], [1794553535.0, 0.323, -227, 192, 100], [1794553540.0, 0.0, 10, 195, 100], [1794553545.0, 0.0, 143, 197, 100], [1794553550.0, 0.0, -462, 198, 100], [1794553555.0, 0.0, 587, 202, 100], [1794553560.0, 0.0, 41, 203, 100], [1794553565.0, 0.0, 278, 205, 100], [1794553570.0, 0.0, 56, 207, 100], [1794553575.0, 0.0, 594, 207, 100], [1794553580.0, 0.0, 3, 210, 100], [1794553585.0, 0.0, 29, 214, 100], [1794553590.0, 0.0, -89, 219, 100], [1794553595.0, 0.0, 103, 225, 100], [1794553600.0, 0.0, 931, 226, 100], [1794553605.0, 0.0, -100, 232, 100], [1794553610.0, 0.0, -87, 234, 100], [1794553615.0, 0.0, 166, 235, 100], [1794553620.0, 0.0, 222, 239, 100], [1794553625.0, 0.0, -50, 240, 100], [1794553630.0, 0.0, 12, 242, 100], [1794553635.0, 0.493, -1, 246, 100], [1794553640.0, 0.524, 144, 247, 100], [1794553645.0, 0.488, -466, 248, 100], [1794553650.0, 0.0, 382, 249, 100], [1794553655.0, 0.0, 506, 251, 100], [1794553660.0, 0.339, 93, 252, 100], [1794553665.0, 0.307, 395, 254, 100], [1794553670.0, 0.0, -190, 254, 100], [1794553675.0, 0.0, 46, 259, 100], [1794553680.0, 0.0, 538, 264, 100], [1794553685.0, 0.0, 71, 266, 100], [1794553690.0, 0.0, 248, 269, 100], [1794553695.0, 0.0, -53, 270, 100], [1794553700.0, 0.0, -25, 274, 100], [1794553705.0, 0.0, 2, 278, 100], [1794553710.0, 0.0, 521, 283, 100], [1794553715.0, 0.0, -36, 284, 100], [1794553720.0, 0.0, -157, 288, 100], [1794553725.0, 0.0, -21, 289, 100]], "delaySet": [[1794552486.0, 273.0], [1794552650.0, 300.0], [1794552683.0, 273.0], [1794552733.0, 350.0], [1794552857.0, 350.0], [1794552887.0, 350.0], [1794552917.0, 350.0], [1794552952.0, 10.0], [1794552995.0, 102.0], [1794553027.0, 95.0], [1794553055.0, 129.0], [1794553064.0, 100.0]], "cal": [[1794552870.0, "UNRELIABLE", 517.0, 2595.1, 74, 83], [1794552901.0, "UNRELIABLE", 672.4, 44.4, 65, 822], [1794552930.0, "UNRELIABLE", -340.5, 61.0, 52, 1162], [1794552961.0, "UNRELIABLE", 182.7, 47.9, 58, 1149], [1794552978.0, "UNRELIABLE", 80.5, 36.8, 55, 43], [1794552987.0, "UNRELIABLE", 39.4, 53.0, 57, 1172], [1794552995.0, "OK", 91.9, 2.2, 42, 1074], [1794553045.0, "UNRELIABLE", -35.3, 57.1, 57, 643], [1794553055.0, "OK", 33.9, 21.4, 48, 901]], "peaks": [[1794552930.0, [0.945, 1.945, 2.944], [1.105, 2.101, 3.161]], [1794552961.0, [0.602, 1.602, 2.601], [1.284, 2.285, 3.237]], [1794552978.0, [0.598, 1.597, 2.597], [1.178, 2.184, 3.147]], [1794552987.0, [0.603, 1.603, 2.602], [1.191, 2.143, 3.137]], [1794552995.0, [0.598, 1.597, 2.598], [1.188, 2.189, 3.19]], [1794553045.0, [0.689, 1.689, 2.688, 3.689, 4.689], [1.211, 2.087, 3.148, 4.153, 5.275]], [1794553055.0, [0.687, 1.686, 2.686, 3.687, 4.685], [1.186, 2.241, 3.195, 4.224, 5.219]]], "lockEris": [[1794554151.0, 306.3, 48], [1794554357.0, 720.8, 24], [1794554377.0, 721.0, 27], [1794554458.0, 553.2, 19], [1794554488.0, 552.8, 20], [1794554573.0, 554.5, 22], [1794554615.0, 730.8, 26], [1794554667.0, 464.2, 39], [1794554767.0, 620.0, 21], [1794555137.0, 2.6, 15], [1794555754.0, 605.5, 24]], "lockBrane": [[1794554154.0, 193.0, 293], [1794554417.0, -190.8, 123], [1794554618.0, -277.8, 311], [1794554670.0, 97.8, 162], [1794554770.0, 10.7, 185], [1794555140.0, 0.0, 149], [1794555757.0, -173.3, 191], [1794556823.0, -124.3, 159], [1794557003.0, -101.7, 176], [1794557037.0, 9.2, 174], [1794557221.0, 0.0, 161], [1794557428.0, -92.0, 163], [1794557692.0, 0.0, 100], [1794558113.0, 64.2, 127], [1794558272.0, 173.0, 254]], "drift": [[1794554167.0, 2.7, 295, false], [1794554171.0, 2.7, 297, false], [1794554175.0, 2.8, 299, false], [1794554182.0, 2.7, 301, false], [1794554190.0, 2.6, 303, false], [1794554194.0, -2.9, 300, false], [1794554201.0, 2.7, 302, false], [1794554205.0, 7.7, 308, false], [1794554210.0, -5.4, 304, false], [1794554214.0, -4.4, 301, false], [1794554217.0, 2.8, 303, false], [1794554221.0, 7.8, 308, false], [1794554226.0, -3.2, 306, false], [1794554234.0, 2.7, 308, false], [1794554238.0, 7.6, 313, false], [1794554243.0, -5.3, 310, false], [1794554247.0, -4.2, 307, false], [1794554250.0, 2.7, 308, false], [1794554254.0, 7.7, 314, false], [1794554675.0, 52.0, 120, false], [1794554681.0, 25.3, 112, false], [1794554687.0, 11.0, 130, false], [1794554697.0, 10.2, 229, false], [1794554714.0, 7.3, 189, false], [1794554726.0, 7.4, 184, false], [1794554742.0, 7.6, 195, false], [1794554754.0, 7.5, 183, false], [1794554774.0, 8.5, 185, false], [1794554787.0, 7.5, 195, false], [1794554794.0, 38.4, 190, false], [1794554800.0, 19.5, 168, false], [1794554804.0, 8.1, 164, false], [1794554813.0, 10.3, 185, false], [1794554824.0, 7.7, 203, false], [1794554836.0, 7.5, 187, false], [1794554849.0, 7.7, 204, false], [1794554862.0, 7.4, 198, false], [1794554866.0, 35.8, 185, false], [1794554871.0, 17.6, 169, false], [1794554876.0, 8.1, 169, false], [1794554884.0, 10.5, 183, false], [1794554894.0, 7.6, 198, false], [1794554905.0, 7.3, 205, false], [1794554918.0, 7.8, 191, false], [1794554929.0, 7.6, 181, false], [1794554938.0, 49.3, 268, false], [1794554947.0, 24.4, 219, false], [1794554952.0, 10.8, 197, false], [1794554966.0, 10.1, 129, false], [1794554975.0, 7.6, 119, false], [1794554986.0, 7.6, 123, false], [1794554997.0, 7.4, 113, false], [1794555008.0, 32.9, 150, false], [1794555014.0, -16.1, 168, false], [1794555018.0, -6.5, 165, false], [1794555028.0, 39.3, 171, false], [1794555034.0, -19.3, 171, false], [1794555038.0, -7.8, 169, false], [1794555047.0, 43.6, 158, false], [1794555053.0, -22.5, 161, false], [1794555143.0, 43.3, 149, false], [1794555220.0, 15.3, 225, false], [1794555764.0, -26.1, null, true], [1794555771.0, -7.8, null, true], [1794555777.0, 7.1, null, true], [1794555783.0, 120.6, null, true], [1794555790.0, -13.6, null, true], [1794555804.0, 6.3, null, true], [1794555817.0, 10.0, null, true], [1794555833.0, 16.3, null, true], [1794555840.0, -7.8, null, true], [1794555846.0, 21.2, null, true], [1794555853.0, -12.1, null, true], [1794555861.0, 27.2, null, true], [1794555868.0, -15.4, null, true], [1794555882.0, 33.7, null, true], [1794555890.0, -18.3, null, true], [1794555903.0, 42.0, null, true], [1794555912.0, -23.6, null, true], [1794555920.0, -6.2, null, true], [1794555926.0, 49.1, null, true], [1794555951.0, -29.9, null, true], [1794555959.0, -8.8, null, true], [1794555965.0, 138.2, null, true], [1794555972.0, 17.1, null, true], [1794555991.0, 56.3, null, true], [1794556001.0, -31.3, null, true], [1794556009.0, -8.6, null, true], [1794556015.0, 7.0, null, true], [1794556028.0, 7.1, null, true], [1794556113.0, -104.7, null, true], [1794556119.0, 68.6, null, true], [1794556131.0, 130.2, null, true], [1794556137.0, 88.0, null, true], [1794556144.0, 112.9, null, true], [1794556151.0, 36.1, null, true], [1794556159.0, 11.6, null, true], [1794556168.0, 9.7, null, true], [1794556179.0, 6.9, null, true], [1794556185.0, 40.4, null, true], [1794556197.0, 14.0, null, true], [1794556209.0, 9.9, null, true], [1794556223.0, 7.7, null, true], [1794556245.0, 8.0, null, true], [1794556337.0, 50.8, null, true], [1794556348.0, 21.1, null, true], [1794556363.0, 49.3, null, true], [1794556374.0, 20.3, null, true], [1794556396.0, 47.6, null, true], [1794556407.0, 19.7, null, true], [1794556481.0, 8.4, null, true], [1794556500.0, 7.8, null, true], [1794556514.0, 7.2, null, true], [1794556613.0, 8.3, null, true], [1794556626.0, 7.6, null, true], [1794556685.0, 8.3, null, true], [1794556704.0, 10.1, null, true], [1794556721.0, 7.0, null, true], [1794556734.0, 7.0, null, true], [1794556746.0, 7.3, null, true], [1794556758.0, 85.8, null, true], [1794556764.0, -50.7, null, true], [1794556774.0, -17.7, null, true], [1794556787.0, 95.5, null, true], [1794556794.0, -67.6, null, true], [1794556804.0, -26.5, null, true], [1794556812.0, -7.1, null, true], [1794556833.0, -11.6, null, true], [1794557010.0, -35.3, null, true], [1794557018.0, -14.7, null, true], [1794557047.0, -38.4, null, true], [1794557228.0, -102.1, null, true], [1794557234.0, -108.7, null, true], [1794557241.0, -67.4, null, true], [1794557252.0, 113.1, null, true], [1794557258.0, 101.3, null, true], [1794557265.0, 63.1, null, true], [1794557276.0, 25.0, null, true], [1794557283.0, 9.9, null, true], [1794557340.0, -15.7, null, true], [1794557403.0, 21.5, null, true], [1794557474.0, 75.7, null, true], [1794557594.0, -6.4, null, true], [1794557611.0, -7.5, null, true], [1794558075.0, 90.0, null, true], [1794558089.0, 101.0, null, true], [1794558102.0, 40.0, null, true], [1794558127.0, 16.3, null, true], [1794558139.0, 43.4, null, true], [1794558148.0, 62.7, null, true], [1794558161.0, 75.1, null, true], [1794558175.0, 123.1, null, true], [1794558191.0, 81.3, null, true], [1794558203.0, 74.7, null, true], [1794558214.0, 116.5, null, true], [1794558237.0, 134.5, null, true], [1794558254.0, 120.0, null, true], [1794558289.0, 25.6, null, true], [1794558297.0, 9.7, null, true], [1794558319.0, -8.3, null, true], [1794558325.0, -6.1, null, true], [1794558345.0, -6.0, null, true], [1794558452.0, 6.1, null, true], [1794558465.0, -6.1, null, true]], "holdback": [[1794554154.0, 205.0], [1794554670.0, 125.0], [1794554697.0, 52.0], [1794554938.0, 71.0], [1794555220.0, 54.0], [1794556144.0, 93.0]], "bursts": [[1794554476.0, -44, 716], [1794554479.0, -703, 1935], [1794554482.0, 18, 2695], [1794554486.0, -2651, 2656], [1794554490.0, -34, 199], [1794554493.0, -2707, 2565], [1794554497.0, -1907, 2777], [1794554500.0, -1393, 2391], [1794554504.0, -2655, 1472], [1794554507.0, -2757, 2797], [1794554511.0, -2105, 542], [1794554514.0, -655, 2205], [1794554518.0, -2756, 1222], [1794554521.0, -998, 2753], [1794554524.0, -764, 2662], [1794554527.0, -2704, 1618], [1794554531.0, -2853, 2824], [1794554541.0, 0, 2048], [1794554544.0, 1260, 2030], [1794554547.0, -2010, 1259], [1794554551.0, -2793, 629], [1794554554.0, -2655, -517], [1794554558.0, -2331, 2002], [1794554561.0, -2880, 1426], [1794554564.0, 688, 1349], [1794554567.0, -3043, 687], [1794554571.0, -1535, 2235], [1794554574.0, -1023, 4067], [1794554578.0, -910, 3890], [1794554581.0, -40, 3992], [1794554585.0, -1846, 3219], [1794554588.0, -1885, 2149], [1794554591.0, -824, 1998], [1794554594.0, -1954, 2579], [1794554597.0, 1101, 2508], [1794554601.0, -2550, 1989], [1794554604.0, -2556, 1292], [1794554612.0, 1000000000, -1000000000], [1794554615.0, 1000000000, -1000000000], [1794554618.0, 1000000000, -1000000000], [1794554621.0, 1000000000, -1000000000], [1794554625.0, 1000000000, -1000000000], [1794554629.0, 1000000000, -1000000000], [1794554632.0, 1000000000, -1000000000], [1794554636.0, 1000000000, -1000000000], [1794554639.0, 1000000000, -1000000000], [1794554642.0, 1000000000, -1000000000], [1794554645.0, 1000000000, -1000000000], [1794554648.0, 1000000000, -1000000000], [1794554651.0, 1000000000, -1000000000], [1794554655.0, 1000000000, -1000000000], [1794554665.0, 1000000000, -1000000000], [1794554669.0, 1000000000, -1000000000], [1794554672.0, 1000000000, -1000000000], [1794554675.0, 1000000000, -1000000000], [1794554679.0, 1000000000, -1000000000], [1794554682.0, 1000000000, -1000000000], [1794554686.0, 1000000000, -1000000000], [1794554689.0, 1000000000, -1000000000], [1794554693.0, 1000000000, -1000000000], [1794554696.0, 1000000000, -1000000000], [1794554699.0, 1000000000, -1000000000], [1794554702.0, 1000000000, -1000000000], [1794554705.0, 1000000000, -1000000000], [1794554709.0, 1000000000, -1000000000], [1794554713.0, 1000000000, -1000000000], [1794554716.0, 1000000000, -1000000000], [1794554720.0, 1000000000, -1000000000], [1794554723.0, 1000000000, -1000000000], [1794554726.0, 1000000000, -1000000000], [1794554730.0, 1000000000, -1000000000], [1794554733.0, 1000000000, -1000000000], [1794554737.0, 1000000000, -1000000000], [1794554740.0, 1000000000, -1000000000], [1794554744.0, 1000000000, -1000000000], [1794554747.0, 1000000000, -1000000000], [1794554750.0, 1000000000, -1000000000], [1794554753.0, 1000000000, -1000000000]], "statusV2": [[1794553802.0, 100, 0.0], [1794553901.0, 100, 0.0], [1794553932.0, 100, 0.0], [1794553982.0, 100, 0.0], [1794554174.0, 296, -2.1], [1794554205.0, 307, 7.8], [1794554237.0, 307, 7.5], [1794554290.0, 313, 0.0], [1794554320.0, 313, 0.0], [1794554350.0, 313, 0.0], [1794554400.0, 313, 0.0], [1794554460.0, 122, 0.0], [1794554499.0, 122, 0.0], [1794554530.0, 122, 0.0], [1794554564.0, 122, 0.0], [1794554595.0, 122, 0.0], [1794554637.0, 248, -277.8], [1794554690.0, 141, 4.9], [1794554720.0, 187, -2.6], [1794554750.0, 206, -2.2], [1794554786.0, 196, 7.5], [1794554816.0, 198, -3.2], [1794554847.0, 197, -2.1], [1794554879.0, 180, 3.3], [1794554909.0, 201, -3.4], [1794554940.0, 256, 49.3], [1794554970.0, 128, -3.1], [1794555001.0, 132, -4.2], [1794555033.0, 171, -19.8], [1794555064.0, 155, -22.6], [1794555101.0, 148, 0.0], [1794555132.0, 148, 0.0], [1794555162.0, 165, 0.0], [1794555192.0, 170, -2.8], [1794555753.0, 177, 0.0], [1794555783.0, 39, 120.3], [1794555813.0, 143, -2.4], [1794555844.0, 129, 22.3], [1794555875.0, 172, -2.5], [1794555906.0, 163, 43.9], [1794555936.0, 142, -95.4], [1794555969.0, 159, 17.1], [1794555999.0, 169, -31.1], [1794556031.0, 140, 7.2], [1794556061.0, 111, -130.8], [1794556092.0, 127, -130.8], [1794556122.0, 6, 68.9], [1794556152.0, 239, 36.1]], "current": "2026-11-13 08:28:54 +0000\nmode: Eris BLUETOOTH + Brane\nstate: locked (in sync, median +2.3 ms)\noffset (Eris held back): 210 ms\nlast measured error: +0.0 ms   corrections: 22   echoes ignored: 276   noisy readings skipped: 9\ndrift cancelled: -0.09 ms per second\nbrane slew frames: 45297  snaps: 22  brane volume mirror: 1.00\n", "reported": {"erisMs": 94.1, "braneMs": 326.8, "erisDevLat": 3640, "braneDevLat": 13901}};
+const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = { eris: tok('--eris'), brane: tok('--brane'), ink: tok('--p-ink'), muted: tok('--p-muted'), dim: tok('--dim'), line: tok('--line'), ok: tok('--ok'), hold: tok('--hold'), err: tok('--err'), bg: tok('--p-bg'), surface: tok('--p-surface') };
+const clock = t => new Date(t * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const clockS = t => new Date(t * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+(function () { const l = D.current.split('\n')[0]; if (l) { const t = new Date(l.replace(' +0000', 'Z').replace(' ', 'T')); const $s = document.getElementById('snap'); $s.textContent = 'Snapshot ' + t.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + t.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } })();
+
+(function () {
+  const cur = {}; D.current.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) cur[l.slice(0, i).trim()] = l.slice(i + 1).trim(); });
+  const med = D.drift.filter(d => d[3]); const absMed = a => { const s = a.map(Math.abs).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+  const k = [
+    ['Connection', (cur.mode || '–').replace('Eris ', '').replace(' + Brane', '').toLowerCase().replace(/^./, c => c.toUpperCase()), 'how the Eris connects'],
+    ['Eris hold-back', cur['offset (Eris held back)'] || '–', 'waits for the Brane'],
+    ['Last error', ((cur['last measured error'] || '–').split(' ')[0]) + ' ms', 'Brane minus Eris'],
+    ['Corrections', String(D.drift.length), 'made by version 2'],
+    ['Typical size', absMed(med.length ? med.map(d => d[1]) : D.drift.map(d => d[1])).toFixed(1) + ' ms', 'median, filtered era'],
+    ['Lock-ins', String(D.lockBrane.length), 'startups'],
+  ];
+  document.getElementById('kpis').innerHTML = k.map(([l, v, n]) => `<div class="ro"><div class="k">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+  document.getElementById('driftCount').textContent = D.drift.length + ' corrections';
+  document.getElementById('lockCount').textContent = D.lockBrane.length + ' starts';
+})();
+
+Chart.defaults.color = C.muted; Chart.defaults.font.family = '"Host Grotesk", system-ui, sans-serif'; Chart.defaults.font.size = 12; Chart.defaults.borderColor = C.line;
+Chart.defaults.plugins.legend.display = false; Chart.defaults.maintainAspectRatio = false; Chart.defaults.animation = matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 300 };
+Object.assign(Chart.defaults.plugins.tooltip, { backgroundColor: C.bg, borderColor: '#3a3c41', borderWidth: 1, padding: 10, cornerRadius: 2, titleFont: { family: '"JetBrains Mono", monospace', weight: '500' }, bodyFont: { family: '"JetBrains Mono", monospace' } });
+const monoTicks = { font: { family: '"JetBrains Mono", monospace', size: 11 } };
+
+new Chart(document.getElementById('cReported'), {
+  type: 'bar',
+  data: { labels: ['Eris, reported', 'Brane, reported', 'Gap, from reports', 'Gap, first beep test', 'Gap, live mic now'],
+    datasets: [{ data: [D.reported.erisMs, D.reported.braneMs, D.reported.braneMs - D.reported.erisMs, 10, parseInt((D.current.match(/held back\): (\d+)/) || [0, 0])[1])],
+      backgroundColor: [C.eris, C.brane, C.dim, C.muted, C.ok], borderRadius: 1, barThickness: 22 }] },
+  options: { indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: monoTicks, grid: { color: C.line } }, y: { ticks: { color: C.ink }, grid: { display: false } } },
+    plugins: { tooltip: { callbacks: { label: c => ` ${c.raw.toFixed(1)} ms`, afterLabel: c => ['What the Eris driver reports', 'What the Brane driver reports', 'Hold-back the reports suggest', 'First valid beep test: about 10 ms needed', 'Hold-back the live mic lock is using'][c.dataIndex] } } } }
+});
+
+(function () {
+  const e = [], b = [];
+  D.peaks.forEach((p, i) => { const t0 = p[1][0]; p[1].forEach(x => e.push({ x: (x - t0) * 1000, y: i + 1 - 0.1 })); p[2].forEach(x => b.push({ x: (x - t0) * 1000, y: i + 1 + 0.1 })); });
+  new Chart(document.getElementById('cBeeps'), {
+    type: 'scatter',
+    data: { datasets: [{ data: e, backgroundColor: C.eris, pointRadius: 4.5, pointHoverRadius: 7 }, { data: b, backgroundColor: C.brane, pointRadius: 4.5, pointHoverRadius: 7 }] },
+    options: { scales: { x: { title: { display: true, text: 'ms after the first Eris beep' }, ticks: monoTicks, grid: { color: C.line } }, y: { min: 0.4, max: D.peaks.length + 0.6, ticks: { ...monoTicks, stepSize: 1, callback: v => Number.isInteger(v) ? 'Run ' + v : '' }, grid: { color: C.line } } },
+      plugins: { tooltip: { callbacks: { label: c => `${c.datasetIndex ? 'Brane' : 'Eris'} beep at ${c.raw.x.toFixed(0)} ms` } } } }
+  });
+})();
+
+(function () {
+  const firstMed = (D.drift.find(d => d[3]) || [null])[0];
+  const t0 = Math.min(...D.drift.map(d => d[0]), ...D.lockBrane.map(d => d[0]));
+  const pts = f => D.drift.filter(f).map(d => ({ x: (d[0] - t0) / 60, y: d[1], t: d[0], med: d[3] }));
+  const locks = D.lockBrane.filter(l => l[0] >= t0).map(l => ({ x: (l[0] - t0) / 60, y: Math.max(-120, Math.min(120, l[1])), raw: l[1], t: l[0] }));
+  const ds = data => [
+    { data, pointRadius: 3.5, pointHoverRadius: 7, backgroundColor: data.map(p => p.y > 0 ? C.brane : C.eris), borderWidth: 0 },
+    { data: locks, pointStyle: 'rectRot', pointRadius: 6, pointHoverRadius: 8, backgroundColor: C.ink, borderWidth: 0 },
+  ];
+  const medLine = { id: 'medLine', afterDraw(ch) { if (!firstMed) return; const x = ch.scales.x.getPixelForValue((firstMed - t0) / 60), { top, bottom } = ch.chartArea, c = ch.ctx; c.save(); c.setLineDash([4, 4]); c.strokeStyle = C.ok; c.beginPath(); c.moveTo(x, top); c.lineTo(x, bottom); c.stroke(); c.restore(); } };
+  const ch = new Chart(document.getElementById('cDrift'), {
+    type: 'scatter', data: { datasets: ds(pts(() => true)) }, plugins: [medLine],
+    options: { scales: { x: { ticks: { ...monoTicks, callback: v => clock(t0 + v * 60) }, grid: { color: C.line } }, y: { title: { display: true, text: 'ms corrected' }, ticks: monoTicks, suggestedMin: -60, suggestedMax: 60, grid: { color: c => c.tick.value === 0 ? '#4a4c51' : C.line } } },
+      plugins: { tooltip: { callbacks: { label: c => c.datasetIndex ? `Lock-in ${clockS(c.raw.t)}: Brane ${sgn(c.raw.raw)} ms` : `${clockS(c.raw.t)}: Brane ${c.raw.y > 0 ? 'late' : 'early'} ${Math.abs(c.raw.y).toFixed(1)} ms${c.raw.med ? ', median of 5' : ''}` } } } }
+  });
+  const f = { fAll: () => true, fPre: d => !d[3], fMed: d => d[3] };
+  Object.keys(f).forEach(id => document.getElementById(id).addEventListener('click', () => { Object.keys(f).forEach(o => document.getElementById(o).setAttribute('aria-pressed', o === id)); ch.data.datasets = ds(pts(f[id])); ch.update(); }));
+})();
+
+const BURSTS = D.bursts.filter(b => Math.abs(b[1]) < 20000 && Math.abs(b[2]) < 20000);
+new Chart(document.getElementById('cBurst'), {
+  type: 'bar',
+  data: { labels: BURSTS.map(b => clockS(b[0])), datasets: [{ data: BURSTS.map(b => [b[1] / 44.1, b[2] / 44.1]), backgroundColor: C.brane + 'cc', borderRadius: 1, borderSkipped: false }] },
+  options: { scales: { x: { ticks: { ...monoTicks, maxTicksLimit: 6 }, grid: { display: false } }, y: { title: { display: true, text: 'buffer swing, ms' }, ticks: monoTicks, grid: { color: C.line } } },
+    plugins: { tooltip: { callbacks: { label: c => ` ${c.raw[0].toFixed(0)} to ${c.raw[1].toFixed(0)} ms in 3 s` } } } }
+});
+
+new Chart(document.getElementById('cV1'), {
+  type: 'line',
+  data: { labels: D.v1status.map(s => clock(s[0])), datasets: [
+    { data: D.v1status.map(s => s[3]), borderColor: C.brane, backgroundColor: C.brane + '1f', fill: true, pointRadius: 0, borderWidth: 1.6, tension: .2, yAxisID: 'y' },
+    { data: D.v1status.map(s => s[4]), borderColor: C.eris, pointRadius: 0, borderWidth: 1.4, stepped: true, yAxisID: 'y2' } ] },
+  options: { interaction: { mode: 'index', intersect: false }, scales: { x: { ticks: { ...monoTicks, maxTicksLimit: 6 }, grid: { display: false } }, y: { title: { display: true, text: 'resyncs' }, ticks: monoTicks, grid: { color: C.line } }, y2: { position: 'right', grid: { display: false }, ticks: monoTicks, title: { display: true, text: 'Eris delay, ms' } } },
+    plugins: { tooltip: { callbacks: { label: c => c.datasetIndex ? ` Eris delay ${c.raw} ms` : ` ${c.raw} resyncs` } } } }
+});
+
+(function () {
+  const H = [
+    ['macOS Multi-Output Device', 'Plays both speakers but does nothing about the Brane being about 230 ms slower.', 'no', 'out of time'],
+    ['Fixed delay from reported latency', 'Held the Eris back 273 ms from the drivers\' numbers, which were wrong.', 'no', 'Eris late'],
+    ['Beep calibration', 'Measured real timing: the Eris is steady, the Brane wanders ±35–50 ms.', 'mid', '~100 ms fixed'],
+    ['Continuous correlation', 'Listens to the music itself. First version steered on buffer level and chased bursts.', 'mid', 'jumpy'],
+    ['Free-running Brane', 'Ignores buffer level; only the mic decides. Locks in about 10 s.', 'ok', '±8 ms'],
+    ['Median filter and drift rate', 'Ignores jumps that snap back, learns the steady drift and cancels it, rejects echoes.', 'ok', '±5 ms'],
+  ];
+  document.getElementById('history').innerHTML = H.map(h => `<li><div><b>${h[0]}</b><p>${h[1]}</p></div><span class="res ${h[2]}">${h[3]}</span></li>`).join('');
+  document.querySelector('#locks tbody').innerHTML = D.lockBrane.map(l => `<tr><td class="mono">${clockS(l[0])}</td><td class="mono" style="color:${Math.abs(l[1]) < 20 ? C.ok : C.hold}">${sgn(l[1])} ms</td><td class="mono">${l[2]} ms</td></tr>`).join('');
+})();
+
+(function () {
+  const ms = document.getElementById('inMs'), fr = document.getElementById('inFr');
+  ms.addEventListener('input', () => { const v = parseFloat(ms.value); fr.value = isFinite(v) ? Math.round(v * 44.1) : ''; });
+  fr.addEventListener('input', () => { const v = parseFloat(fr.value); ms.value = isFinite(v) ? (v / 44.1).toFixed(1) : ''; });
+})();
+
+(function () {
+  const fs = 8000, N = 4096, maxLag = 1600, FN = 8192, LeMs = 90, $ = id => document.getElementById(id);
+  const S = { corr: 0, hist: [], track: [] };
+  const sl = { off: $('sOff'), jit: $('sJit'), spike: $('sSpike'), noise: $('sNoise'), refl: $('sRefl') };
+  const lab = () => { $('vOff').textContent = sgn(+sl.off.value, 0) + ' ms'; $('vJit').textContent = '±' + sl.jit.value + ' ms'; $('vSpike').textContent = sl.spike.value + '%'; $('vNoise').textContent = sl.noise.value + '%'; $('vRefl').textContent = sl.refl.value + '%'; };
+  Object.values(sl).forEach(s => s.addEventListener('input', lab)); lab();
+  function fft(re, im, inv) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+    for (let len = 2; len <= n; len <<= 1) { const a = 2 * Math.PI / len * (inv ? 1 : -1), wr = Math.cos(a), wi = Math.sin(a);
+      for (let i = 0; i < n; i += len) { let cr = 1, ci = 0; for (let j = 0; j < len / 2; j++) { const ur = re[i + j], ui = im[i + j], vr = re[i + j + len / 2] * cr - im[i + j + len / 2] * ci, vi = re[i + j + len / 2] * ci + im[i + j + len / 2] * cr; re[i + j] = ur + vr; im[i + j] = ui + vi; re[i + j + len / 2] = ur - vr; im[i + j + len / 2] = ui - vi; const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr; } } }
+  }
+  const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  function reading() {
+    let spike = 0; if (Math.random() * 100 < +sl.spike.value) spike = (30 + Math.random() * 60) * (Math.random() < .5 ? -1 : 1);
+    const trueErr = +sl.off.value + randn() * (+sl.jit.value) / 2 + spike - S.corr;
+    const Le = Math.round(LeMs * fs / 1000), Lb = Math.max(0, Math.min(maxLag - 1, Math.round((LeMs + trueErr) * fs / 1000)));
+    const len = N + maxLag, s = new Float64Array(len);
+    for (let i = 0; i < len; i++) { const beat = Math.exp(-((i % 3800) / 300)); s[i] = randn() * (0.35 + 1.6 * beat); }
+    const m = new Float64Array(N), refl = +sl.refl.value / 100, noise = +sl.noise.value / 100, rd = Math.round(0.006 * fs);
+    for (let n = 0; n < N; n++) { const j = n + maxLag; m[n] = 0.8 * s[j - Le] + 1.0 * s[j - Lb] + refl * (j - Lb - rd >= 0 ? s[j - Lb - rd] : 0) + noise * 2.2 * randn(); }
+    const mr = new Float64Array(FN), mi = new Float64Array(FN), sr = new Float64Array(FN), si = new Float64Array(FN);
+    m.forEach((v, i) => mr[i] = v); s.forEach((v, i) => sr[i] = v); fft(mr, mi, false); fft(sr, si, false);
+    const lo = Math.floor(150 / (fs / FN)), hi = Math.floor(3500 / (fs / FN)), cr = new Float64Array(FN), ci = new Float64Array(FN);
+    for (let k = 0; k < FN; k++) { const kk = k <= FN / 2 ? k : FN - k; if (kk < lo || kk > hi) continue; const a = mr[k], b = -mi[k], c = sr[k], d = si[k]; const x = a * c - b * d, y = a * d + b * c, mag = Math.pow(x * x + y * y, 0.375) + 1e-12; cr[k] = x / mag; ci[k] = y / mag; }
+    fft(cr, ci, true);
+    const cl = new Float64Array(maxLag + 1); for (let L = 0; L <= maxLag; L++) cl[L] = Math.abs(cr[maxLag - L]);
+    const am = (a, b, ex) => { let bi = -1, bv = -1; for (let L = Math.max(0, a); L <= Math.min(maxLag, b); L++) { if (ex && Math.abs(L - ex[0]) <= ex[1]) continue; if (cl[L] > bv) { bv = cl[L]; bi = L; } } return [bi, bv]; };
+    const [, gV] = am(0, maxLag), sorted = Array.from(cl).sort((a, b) => a - b), floor = sorted[sorted.length >> 1] || 1e-9;
+    const [eL] = am(Le - Math.round(.012 * fs), Le + Math.round(.012 * fs));
+    const [bL, bV] = am(eL - Math.round(.15 * fs), eL + Math.round(.15 * fs), [eL, Math.round(.002 * fs)]);
+    const valid = bV >= .3 * gV && bV > 6 * floor, err = valid ? (bL - eL) / fs * 1000 : 0;
+    return { cl, eL, bL, valid, err, gV };
+  }
+  function drawCorr(r) {
+    const cv = $('simCorr'), g = cv.getContext('2d'), W = cv.width, H = cv.height, pad = 24; g.clearRect(0, 0, W, H);
+    const lo = Math.max(0, r.eL - Math.round(.2 * fs)), hi = Math.min(maxLag, r.eL + Math.round(.2 * fs));
+    const X = L => pad + (L - lo) / (hi - lo) * (W - 2 * pad), Y = v => H - 26 - v / r.gV * (H - 54);
+    g.fillStyle = '#4cc38a1f'; g.fillRect(X(r.eL - .006 * fs), 12, X(r.eL + .006 * fs) - X(r.eL - .006 * fs), H - 38);
+    g.strokeStyle = C.line; g.fillStyle = C.muted; g.font = '12px "JetBrains Mono", monospace'; g.textAlign = 'center';
+    for (let ms = -200; ms <= 200; ms += 50) { const L = r.eL + ms * fs / 1000; if (L < lo || L > hi) continue; const x = Math.round(X(L)) + .5; g.beginPath(); g.moveTo(x, 12); g.lineTo(x, H - 26); g.stroke(); g.fillText(sgn(ms, 0) + ' ms', Math.min(W - 34, Math.max(34, x)), H - 8); }
+    g.strokeStyle = C.muted; g.lineWidth = 1.3; g.beginPath(); for (let L = lo; L <= hi; L++) { const x = X(L), y = Y(r.cl[L]); L === lo ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke(); g.lineWidth = 1;
+    const mark = (L, col, txt, left) => { const x = X(L), y = Y(r.cl[L]); g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(x, y); g.lineTo(x, H - 26); g.stroke(); g.lineWidth = 1; g.fillStyle = col; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); g.font = '500 13px "JetBrains Mono", monospace'; g.textAlign = left ? 'right' : 'left'; g.fillText(txt, x + (left ? -10 : 10), Math.max(18, y + 4)); };
+    mark(r.eL, C.eris, 'Eris', true);
+    if (r.valid) mark(r.bL, C.brane, 'Brane ' + sgn(r.err) + ' ms', false); else { g.fillStyle = C.ok; g.font = '500 13px "JetBrains Mono", monospace'; g.textAlign = 'left'; g.fillText('spikes merged: in time', X(r.eL) + 12, 26); }
+  }
+  function drawTrack() {
+    const cv = $('simTrack'), g = cv.getContext('2d'), W = cv.width, H = cv.height, pad = 44; g.clearRect(0, 0, W, H);
+    const pts = S.track.slice(-60), Y = v => H / 2 - Math.max(-120, Math.min(120, v)) / 120 * (H / 2 - 14);
+    g.fillStyle = '#4cc38a1f'; g.fillRect(pad, Y(6), W - pad - 8, Y(-6) - Y(6));
+    g.strokeStyle = C.line; g.beginPath(); g.moveTo(pad, H / 2); g.lineTo(W - 8, H / 2); g.stroke();
+    g.fillStyle = C.muted; g.font = '12px "JetBrains Mono", monospace'; g.textAlign = 'right'; g.fillText('+120', pad - 8, 18); g.fillText('0', pad - 8, H / 2 + 4); g.fillText('−120', pad - 8, H - 6);
+    const X = i => pad + 6 + i / 59 * (W - pad - 20);
+    g.strokeStyle = C.muted; g.lineWidth = 1.6; g.beginPath(); pts.forEach((p, i) => { i ? g.lineTo(X(i), Y(p.trueAfter)) : g.moveTo(X(i), Y(p.trueAfter)); }); g.stroke(); g.lineWidth = 1;
+    pts.forEach((p, i) => { g.fillStyle = p.corrected ? C.ink : C.brane; g.beginPath(); g.arc(X(i), Y(p.meas), p.corrected ? 5 : 3.4, 0, 7); g.fill(); });
+  }
+  function step() {
+    const r = reading(); drawCorr(r);
+    $('rPe').textContent = LeMs.toFixed(1) + ' ms'; $('rPb').textContent = r.valid ? (r.bL / fs * 1000).toFixed(1) + ' ms' : 'merged'; $('rErr').textContent = sgn(r.err) + ' ms';
+    S.hist.push(r.err); if (S.hist.length > 5) S.hist.shift();
+    let corrected = false, msg = `Collecting readings, ${S.hist.length} of 5.`, mi = -1, cls = '';
+    if (S.hist.length === 5) {
+      const med = [...S.hist].sort((a, b) => a - b)[2]; mi = S.hist.indexOf(med);
+      if (Math.abs(med) < 6) { msg = `Median ${sgn(med)} ms is inside ±6 ms. No change.`; cls = 'ok'; }
+      else { const sh = Math.abs(med) > 50 ? med : 0.6 * med; S.corr += sh; corrected = true; cls = 'act'; msg = `Median ${sgn(med)} ms. Brane moved ${sh > 0 ? 'earlier' : 'later'} by ${Math.abs(sh).toFixed(1)} ms${Math.abs(med) > 50 ? ' in one jump' : ', slid in gradually'}. Window cleared.`; }
+    }
+    const cells = S.hist.map((h, i) => `<div class="cell ${i === mi ? 'med' : ''}">${sgn(h)}</div>`); while (cells.length < 5) cells.push('<div class="cell empty">–</div>');
+    $('rHist').innerHTML = cells.join(''); if (corrected) S.hist = [];
+    const v = $('rDecision'); v.className = 'verdict ' + cls; v.textContent = msg; $('rCorr').textContent = S.corr.toFixed(1) + ' ms';
+    const trueAfter = +sl.off.value - S.corr; $('rTrue').textContent = sgn(trueAfter) + ' ms'; $('rTrue').style.color = Math.abs(trueAfter) <= 6 ? C.ok : C.brane;
+    S.track.push({ meas: r.err, trueAfter, corrected }); drawTrack();
+  }
+  let timer = null;
+  $('bMeasure').addEventListener('click', step);
+  $('bAuto').addEventListener('click', () => { const on = !timer; $('bAuto').setAttribute('aria-pressed', on); $('bAuto').textContent = on ? 'Pause' : 'Run continuously'; if (on) { step(); timer = setInterval(step, 650); } else { clearInterval(timer); timer = null; } });
+  $('bReset').addEventListener('click', () => { S.corr = 0; S.hist = []; S.track = []; step(); });
+  step();
+})();
+</script>
